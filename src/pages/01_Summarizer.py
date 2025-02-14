@@ -1,10 +1,7 @@
-from datetime import datetime
+import streamlit as st
 from g4f.client import Client
 
 client = Client()
-
-import streamlit as st
-
 
 def generate_summary(story_text: str) -> str:
     # Define the prompt for summarization
@@ -35,4 +32,4 @@ def summarizer():
             st.write(summary)
 
 
-    
+summarizer()

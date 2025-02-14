@@ -4,18 +4,21 @@ from g4f.client import Client
 client = Client()
 
 def generate_content(input_text):
-    system_prompt = """You're a professional content repurposing expert. 
-    Generate A 280-character tweet with hashtags
-    Keep tone: {tone}"""
-    
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": system_prompt.format(tone=st.session_state.tone)},
-            {"role": "user", "content": input_text}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        system_prompt = """You're a professional content repurposing expert. 
+        Generate A 280-character tweet with hashtags
+        Keep tone: {tone}"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": system_prompt.format(tone=st.session_state.tone)},
+                {"role": "user", "content": input_text}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def content_repurposer():
     st.title("📑 Content Repurposer")
@@ -37,3 +40,5 @@ def content_repurposer():
             with st.expander("Twitter Post", expanded=True):
                 st.write(output_parts[0])
                 st.button("📋 Copy", key="copy_tweet")
+
+content_repurposer()
