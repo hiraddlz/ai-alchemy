@@ -13,4 +13,5 @@ def ascii_artist():
             ascii = generate_text(system_prompt, input_text)
             st.code(ascii, language=None)
 
+
 ascii_artist()

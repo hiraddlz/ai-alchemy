@@ -13,23 +13,34 @@ def content_repurposer():
         st.session_state.tone = st.selectbox(
             "Select Tone:", ("Casual", "Professional", "Humorous")
         )
+        st.session_state.social_media = st.selectbox(
+            "Select Social Media:", ("Linkedin", "Twitter")
+        )
 
         if st.button("Generate"):
             with st.spinner("Repurposing content..."):
-                system_prompt = """You're a professional content repurposing expert. 
-                Generate A 280-character tweet with hashtags
-                Keep tone: {tone}""".format(
-                    tone=st.session_state.tone
-                )
+                if st.session_state.social_media == "Linkedin":
+                    system_prompt = """You're a professional content repurposing expert. 
+                    Generate a LinkedIn post with hashtags and emojis
+                    Keep tone: {tone}""".format(
+                        tone=st.session_state.tone
+                    )
+
+                elif st.session_state.social_media == "Twitter":
+                    system_prompt = """You're a professional content repurposing expert. 
+                    Generate A 280-character tweet with hashtags
+                    Keep tone: {tone}""".format(
+                        tone=st.session_state.tone
+                    )
                 st.session_state.output = generate_text(system_prompt, input_text)
 
     with col2:
         if "output" in st.session_state:
             output_parts = st.session_state.output.split("\n\n")
 
-            with st.expander("Twitter Post", expanded=True):
+            with st.expander("Social Media Post", expanded=True):
                 st.write(output_parts[0])
-                st.button("📋 Copy", key="copy_tweet")
+                st.button("📋 Copy", key="copy")
 
 
 content_repurposer()
