@@ -11,6 +11,33 @@
 - **Free & Open-Source:** Available on GitHub with contributions welcome from the community.
 - **Easy Deployment:** Ready to deploy on Streamlit Cloud or any hosting platform that supports Python apps.
 
+## Available Tools
+Below is a checklist of the AI-powered tools available in **AI Alchemy**:
+
+- [x] **Summarizer**  
+  Condense long articles, reports, or stories into concise summaries.
+
+- [x] **Content Reproducer**  
+  Adapt and rework content for platforms like LinkedIn and Twitter, ensuring your message resonates with your audience.
+
+- [x] **IELTS Writing Examiner**  
+  Evaluate IELTS writing samples and provide detailed feedback to help improve your writing skills.
+
+- [x] **Proofreader**  
+  Detect and correct grammatical, punctuation, and spelling errors in your text.
+
+- [x] **Translator**  
+  Translate text between multiple languages using advanced AI models.
+
+- [x] **ASCII Artist**  
+  Convert images into creative ASCII art for fun and unique visual representations.
+
+- [x] **File Q&A**  
+  Ask questions about the contents of files (e.g., PDFs, text files) and receive detailed, context-aware answers.
+
+- [ ] **LaTeX Image Converter** *(Under Development)*  
+  Transform LaTeX images code for academic and professional writing.
+
 ## Getting Started
 
 ### Prerequisites
