@@ -1,5 +1,5 @@
 import streamlit as st
-from tools.llm_utils import generate_text
+from tools.llm_utils import generate_text, stream_content
 
 
 def main():
@@ -34,9 +34,10 @@ def main():
             with st.spinner("Translating..."):
                 system_prompt = f"You are a professional translator. Translate the following text to {target_language}\
                     just give me the translation in language {target_language} without any explanation."
-                translation = generate_text(system_prompt, text_to_translate)
+                user_prompt = f"This is the text:{text_to_translate}"
+                translation = generate_text(system_prompt, user_prompt , stream=True)
             st.subheader("Translation")
-            st.write(translation)
+            st.write(stream_content(translation))
         else:
             st.warning("Please enter some text to translate.")
 
