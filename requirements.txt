@@ -1,0 +1,4 @@
+g4f==0.4.6.1
+streamlit==1.42.0
+langchain==0.3.18
+streamlit-chat==0.1.0
