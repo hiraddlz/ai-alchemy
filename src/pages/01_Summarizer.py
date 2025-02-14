@@ -1,5 +1,6 @@
 import streamlit as st
-from tools.llm_utils import generate_text
+
+from tools.llm_utils import generate_text, stream_content
 
 
 def summarizer():
@@ -11,9 +12,9 @@ def summarizer():
         if st.form_submit_button("Summarize"):
             system_prompt = "You are a helpful assistant that summarizes text."
             user_prompt = f"Summarize the following text:\n\n{input_text}"
-            summary = generate_text(system_prompt, user_prompt)
+            summary = generate_text(system_prompt, user_prompt, stream=True)
             st.write("### Summary:")
-            st.write(summary)
+            st.write_stream(stream_content(summary))
 
 
 summarizer()

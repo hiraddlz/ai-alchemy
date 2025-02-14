@@ -36,10 +36,8 @@ def content_repurposer():
 
     with col2:
         if "output" in st.session_state:
-            output_parts = st.session_state.output.split("\n\n")
-
             with st.expander("Social Media Post", expanded=True):
-                st.write(output_parts[0])
+                st.write(st.session_state.output)
                 st.button("📋 Copy", key="copy")
 
 
