@@ -12,7 +12,7 @@ def main():
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     
     # Sidebar Navigation
-    st.sidebar.title("AI Tools Suite")
+    st.sidebar.title("AI Alchemy")
     tool_choice = st.sidebar.radio(
         "Choose Tool:",
         ("Content Repurposer", "Summarizer")
