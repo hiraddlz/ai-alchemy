@@ -14,4 +14,5 @@ def proofreader():
             st.write("Corrected Text")
             st.write(result)
 
+
 proofreader()
