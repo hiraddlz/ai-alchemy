@@ -35,9 +35,9 @@ def main():
                 system_prompt = f"You are a professional translator. Translate the following text to {target_language}\
                     just give me the translation in language {target_language} without any explanation."
                 user_prompt = f"This is the text:{text_to_translate}"
-                translation = generate_text(system_prompt, user_prompt , stream=True)
+                translation = generate_text(system_prompt, user_prompt, stream=True)
             st.subheader("Translation")
-            st.write(stream_content(translation))
+            st.write_stream(stream_content(translation))
         else:
             st.warning("Please enter some text to translate.")
 

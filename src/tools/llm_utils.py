@@ -33,8 +33,8 @@ def generate_text(
             return f"Error: {str(e)}"
 
 
-def stream_content(response): # response is a generator
+def stream_content(response):  # response is a generator
     for chunk in response:
         delta = chunk.choices[0].delta.content
-        if delta: # handle potential None values
+        if delta:  # handle potential None values
             yield delta

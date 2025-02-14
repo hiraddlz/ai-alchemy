@@ -14,7 +14,6 @@ st.title("💬 Chatbot")
 client = Client()
 
 
-
 # Set a default model
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-4"
