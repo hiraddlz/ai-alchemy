@@ -18,17 +18,20 @@ def generate_image(prompt: str) -> str:
     except Exception as e:
         return f"Error: {e}"
 
-def ocr(image_url: str, language: str ='en') -> str:
+
+def ocr(image_url: str, language: str = "en") -> str:
     import pytesseract
-    
+
     try:
         image = Image.open(image_url)
-        results = pytesseract.image_to_string(image, config = r'--psm 3 -c tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789() "',
-)
+        results = pytesseract.image_to_string(
+            image,
+            config=r'--psm 3 -c tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789() "',
+        )
         return results
     except Exception as e:
         return f"Error: {e}"
-    
+
 
 def image_to_latex(image_path, model="pix2tex"):
     """
@@ -71,6 +74,5 @@ def image_to_latex(image_path, model="pix2tex"):
         # Perform OCR to get LaTeX code
         latex_code = model.predict(image)
     return latex_code
-
 
     return latex_code

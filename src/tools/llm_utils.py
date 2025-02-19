@@ -42,6 +42,7 @@ def stream_content(response):  # response is a generator
         if delta:  # handle potential None values
             yield delta
 
+
 def json_output(answer):
     """
     Convert string output of AI answer into JSON.
@@ -56,7 +57,7 @@ def json_output(answer):
     ends = [match.start() for match in re.finditer("}", answer)]
     if len(ends) == 0:
         ends.append(len(answer))
-        answer += '}'
+        answer += "}"
     for end in ends[::-1]:
         try:
             processed_text = answer[start : end + 1]

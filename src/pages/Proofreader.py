@@ -15,7 +15,8 @@ def proofreader():
             result = generate_text(system_prompt, input_text, stream=False)
 
             from redlines import Redlines
-            diff = Redlines(input_text,result)
+
+            diff = Redlines(input_text, result)
             st.markdown(diff.output_markdown, unsafe_allow_html=True)
 
             # st.write("Corrected Text")

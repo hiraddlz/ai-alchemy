@@ -8,18 +8,25 @@ def IELTS_Examiner():
 
     with st.form("ielts_examiner_form"):
         input_text = st.text_area("Add your IELTS writing here to evaluate:")
-        uploaded_image = st.file_uploader("Or upload an image of your writing:", type=["png", "jpg", "jpeg"])
+        uploaded_image = st.file_uploader(
+            "Or upload an image of your writing:", type=["png", "jpg", "jpeg"]
+        )
 
         if st.form_submit_button("Evaluate"):
             if uploaded_image:
                 import tempfile
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
-                    temp_file.write(uploaded_image.read())  # Write the file to the temporary directory
+
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".png"
+                ) as temp_file:
+                    temp_file.write(
+                        uploaded_image.read()
+                    )  # Write the file to the temporary directory
                     image_path = temp_file.name  # Get file path
                 input_text = ocr(image_path)  # Extract text from image
                 st.write("### Extracted Text:")
                 st.write(input_text)
-            
+
             if not input_text.strip():
                 st.write("Please provide text input or upload an image.")
                 return
@@ -42,8 +49,6 @@ def IELTS_Examiner():
                 print(f"Error: {str(e)}")
                 st.write(f"Try again.")
             evaluation = generate_text(system_prompt, input_text)
-
-
 
 
 IELTS_Examiner()
