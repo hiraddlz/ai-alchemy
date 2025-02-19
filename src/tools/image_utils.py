@@ -20,9 +20,12 @@ def generate_image(prompt: str) -> str:
 def ocr(image_url: str, language: str ='en') -> str:
     import pytesseract
     from PIL import Image
+    
     try:
         image = Image.open(image_url)
-        results = pytesseract.image_to_string(image)
+        results = pytesseract.image_to_string(image,
+                                            config='--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+)
         return results
     except Exception as e:
         return f"Error: {e}"
