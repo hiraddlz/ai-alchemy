@@ -16,3 +16,19 @@ def generate_image(prompt: str) -> str:
         return image_url
     except Exception as e:
         return f"Error: {e}"
+
+def ocr(image_url: str, language: str ='en') -> str:
+    from paddleocr import PaddleOCR
+    try:
+        print(image_url)
+        ocr = PaddleOCR(lang=language)
+        print(image_url)
+        results = ocr.ocr(image_url)
+        print('hello')
+
+        print(results)
+        results = [line[1][0] for line in results[0]]
+        results = " ".join(results)
+        return results
+    except Exception as e:
+        return f"Error: {e}"
