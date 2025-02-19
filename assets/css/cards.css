@@ -1,0 +1,49 @@
+button.tool-card {
+    height: 200px;
+    width: 100%;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    cursor: pointer;
+}
+
+.tool-emoji {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.category-header {
+    font-size: 1.5rem;
+    margin: 25px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+button.tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+button.tool-card:hover::after {
+    content: attr(data-hover);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(var(--background-color-raw), 0.9);
+    color: var(--text-color);
+    padding: 10px;
+    font-size: 14px;
+    backdrop-filter: blur(2px);
+}

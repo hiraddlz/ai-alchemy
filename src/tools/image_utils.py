@@ -60,6 +60,16 @@ def image_to_latex(image_path, model="pix2tex"):
 
         # Perform OCR to get LaTeX code
         latex_code = model.predict(image)
+    elif model == "surya":
+        from surya import Surya
+
+        # Initialize the OCR model
+        model = Surya()
+        # Open the image file
+        image = Image.open(image_path)
+
+        # Perform OCR to get LaTeX code
+        latex_code = model.predict(image)
     return latex_code
 
 

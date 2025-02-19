@@ -1,48 +1,132 @@
 import streamlit as st
-from g4f.client import Client
-from tools.llm_utils import stream_content
+import os
+
+# Predefined page configuration
+PAGE_CONFIG = {
+    "IELTS Tools": [
+        {
+            "name": "IELTS Writing Examiner",
+            "emoji": "📝",
+            "hover": "Evaluate & score IELTS writing tasks with detailed feedback",
+            "filename": "IELTS_Writing_Examiner.py"
+        },
+        # {
+        #     "name": "IELTS Speaking Simulator",
+        #     "emoji": "🎤",
+        #     "hover": "Practice IELTS speaking tests with AI evaluation",
+        #     "filename": "IELTS_Speaking_Simulator.py"
+        # }
+    ],
+    "Writing Tools": [
+        {
+            "name": "Summarizer",
+            "emoji": "📝",
+            "hover": "Condense long texts into key points",
+            "filename": "Summarizer.py"
+        },
+        {
+            "name": "Content Repurposer",
+            "emoji": "♻️",
+            "hover": "Adapt content for different formats/platforms",
+            "filename": "Content_Repurposer.py"
+        },
+        {
+            "name": "Proofreader",
+            "emoji": "🔍",
+            "hover": "Advanced grammar and style checking",
+            "filename": "Proofreader.py"
+        }
+    ],
+    "Conversational AI": [
+        {
+            "name": "Chatbot",
+            "emoji": "🤖",
+            "hover": "24/7 AI assistant for general inquiries and support",
+            "filename": "Chatbot.py"
+        }
+    ],
+    "Conversion Tools": [
+        {
+            "name": "Image to LaTeX Converter",
+            "emoji": "📸",
+            "hover": "Convert math equations from images to LaTeX",
+            "filename": "Image_to_LaTeX_Converter.py"
+        },
+        {
+            "name": "Ascii Artist",
+            "emoji": "🎨",
+            "hover": "Convert images to ASCII art",
+            "filename": "Ascii_Artist.py"
+        }
+    ],
+    "Language Tools": [
+        {
+            "name": "Translator",
+            "emoji": "🌐",
+            "hover": "Multi-language translation with context preservation",
+            "filename": "Translator.py"
+        }
+    ],
+    "Analysis Tools": [
+        {
+            "name": "File Q&A",
+            "emoji": "📁",
+            "hover": "Ask questions about document contents",
+            "filename": "File_Q&A.py"
+        }
+    ]
+}
 
 
-st.set_page_config(page_title="AI Alchemy", layout="wide")
+def load_css():
+    """Load CSS from root assets directory"""
+    try:
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        css_path = os.path.join(root_dir, "assets", "css", "cards.css")
+        
+        with open(css_path) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Error loading CSS: {str(e)}")
 
-# Load custom CSS
-with open("assets/css/styles.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# Initialize session state
+if 'selected_page' not in st.session_state:
+    st.session_state.selected_page = None
 
-st.title("💬 Chatbot")
+def handle_click(page_name):
+    st.session_state.selected_page = f"pages/{page_name}"
 
-client = Client()
+st.set_page_config(layout="wide")
+load_css()
 
+st.title("AI Toolkit Suite")
 
-# Set a default model
-if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "gpt-4"
+for category, tools in PAGE_CONFIG.items():
+    st.markdown(f"<div class='category-header'>{category}</div>", unsafe_allow_html=True)
+    
+    cols = st.columns(4)
+    for idx, tool in enumerate(tools):
+        with cols[idx % 4]:
+            # Visible card using markdown
+            st.markdown(
+                f"""
+                <div class='tool-card' data-hover="{tool['hover']}">
+                    <div class="tool-emoji">{tool['emoji']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # Invisible button for click handling
+            if st.button(
+                key=f"btn_{tool['filename']}",
+                label=tool['name'],
+                help=tool['hover'],
+                on_click=handle_click,
+                args=(tool['filename'],)
+            ):
+                pass
 
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# Accept user input
-if prompt := st.chat_input("What is up?"):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    # Display user message in chat message container
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        stream = client.chat.completions.create(
-            model=st.session_state["openai_model"],
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
-        response = st.write_stream(stream_content(stream))
-    st.session_state.messages.append({"role": "assistant", "content": response})
+# Handle page navigation
+if st.session_state.selected_page:
+    st.switch_page(st.session_state.selected_page)
