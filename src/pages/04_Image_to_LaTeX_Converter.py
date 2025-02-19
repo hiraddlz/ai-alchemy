@@ -18,7 +18,7 @@ if uploaded_file is not None:
 
     # Convert the image to LaTeX code
     with st.spinner('Converting image to LaTeX...'):
-        latex_code = image_to_latex("temp_image.png")
+        latex_code = image_to_latex("temp_image.png", model="nougat")
 
     st.subheader("Generated LaTeX Code")
     st.code(latex_code, language='latex')

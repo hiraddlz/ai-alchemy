@@ -30,7 +30,7 @@ def ocr(image_url: str, language: str ='en') -> str:
         return f"Error: {e}"
     
 
-def image_to_latex(image_path):
+def image_to_latex(image_path, model="pix2tex"):
     """
     Convert an image containing a mathematical equation to LaTeX code.
 
@@ -40,14 +40,27 @@ def image_to_latex(image_path):
     Returns:
         str: The LaTeX code representing the equation.
     """
-    from pix2tex.cli import LatexOCR
+    if model == "pix2tex":
+        from pix2tex.cli import LatexOCR
 
-    # Initialize the OCR model
-    model = LatexOCR()
-    # Open the image file
-    image = Image.open(image_path)
+        # Initialize the OCR model
+        model = LatexOCR()
+        # Open the image file
+        image = Image.open(image_path)
 
-    # Perform OCR to get LaTeX code
-    latex_code = model(image)
+        # Perform OCR to get LaTeX code
+        latex_code = model(image)
+    elif model == "nougat":
+        from nougat import Nougat
+
+        # Initialize the OCR model
+        model = Nougat()
+        # Open the image file
+        image = Image.open(image_path)
+
+        # Perform OCR to get LaTeX code
+        latex_code = model.predict(image)
+    return latex_code
+
 
     return latex_code
