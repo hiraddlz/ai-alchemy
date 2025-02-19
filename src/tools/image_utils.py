@@ -23,7 +23,7 @@ def ocr(image_url: str, language: str ='en') -> str:
     
     try:
         image = Image.open(image_url)
-        results = pytesseract.image_to_string(image, config = r'--psm 3 -c tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz "',
+        results = pytesseract.image_to_string(image, config = r'--psm 3 -c tessedit_char_whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789() "',
 )
         return results
     except Exception as e:
