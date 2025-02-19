@@ -1,3 +1,6 @@
+import json
+import re
+
 from g4f.client import Client
 
 client = Client()
@@ -38,3 +41,31 @@ def stream_content(response):  # response is a generator
         delta = chunk.choices[0].delta.content
         if delta:  # handle potential None values
             yield delta
+
+def json_output(answer):
+    """
+    Convert string output of AI answer into JSON.
+
+    Args:
+        answer (str): AI's response.
+
+    Returns:
+        dict: JSON representation of the answer.
+    """
+    start = answer.index("{")
+    ends = [match.start() for match in re.finditer("}", answer)]
+    if len(ends) == 0:
+        ends.append(len(answer))
+        answer += '}'
+    for end in ends[::-1]:
+        try:
+            processed_text = answer[start : end + 1]
+            return json.loads(processed_text)
+        except:
+            continue
+    processed_text = processed_text.replace("\n", " ")
+    processed_text = processed_text.replace("'", '"')
+    processed_text = processed_text.replace("None", '"None"')
+    processed_text = processed_text.replace("'", '"')
+    processed_text = processed_text.replace("\n", "")
+    return json.loads(processed_text)
