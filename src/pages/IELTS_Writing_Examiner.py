@@ -38,13 +38,14 @@ def IELTS_Examiner():
             try:
                 evaluation = generate_text(system_prompt, input_text)
                 result = json_output(evaluation)
-                st.write(f"### Score: {result['band']} / 9")
+                st.success(f"### Score: {result['band']} / 9")
                 st.write(f"### Feedback:")
                 st.write(f"{result['feedback']}")
                 st.write("### Mistakes:")
                 for i, mistake in enumerate(result["mistakes"]):
-                    st.write(f"- **Mistake {i+1}:** {mistake['mistake']}")
-                    st.write(f"- **Correction {i+1}:** {mistake['correction']}")
+                    st.write(f"---")
+                    st.write(f"**Mistake {i+1}:** {mistake['mistake']}")
+                    st.write(f"**Correction {i+1}:** {mistake['correction']}")
             except Exception as e:
                 print(f"Error: {str(e)}")
                 st.write(f"Try again.")

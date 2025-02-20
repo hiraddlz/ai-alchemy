@@ -73,7 +73,13 @@ PAGE_CONFIG = {
             "emoji": "📁",
             "hover": "Ask questions about document contents",
             "filename": "File_Q&A.py",
-        }
+        },
+        {
+            "name": "Resume Matcher",
+            "emoji": "📄",
+            "hover": "Match resumes with job descriptions using AI analysis",
+            "filename": "Resume_Matcher.py",
+        },
     ],
 }
 
