@@ -12,7 +12,8 @@ def proofreader():
         if st.form_submit_button("Correction"):
             system_prompt = "I want to improve my English. I want you act as a proofreader. I will provide you texts and I would like you to review them for any spelling, grammar, or punctuation errors. just correct the mistakes in my text by changing them to the corrected one.\
                 just give me the corrected version of the input text. "
-            result = generate_text(system_prompt, input_text, stream=False)
+            user_prompt = f"""This is the input text in the triple backticks: ```{input_text}```"""
+            result = generate_text(system_prompt, user_prompt, stream=False)
 
             from redlines import Redlines
 
