@@ -35,6 +35,9 @@ Below is a checklist of the AI-powered tools available in **AI Alchemy**:
 - [x] **File Q&A**  
   Ask questions about the contents of files (e.g., PDFs, text files) and receive detailed, context-aware answers.
 
+- [x] **Resume Matcher**  
+  Match resumes with job descriptions using AI.
+
 - [ ] **LaTeX Image Converter** *(Under Development)*  
   Transform LaTeX images code for academic and professional writing.
 
