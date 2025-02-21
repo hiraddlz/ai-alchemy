@@ -52,6 +52,22 @@ Job Description:
     response = json_output(generate_text(system_prompt, user_prompt))
     return response
 
+def generate_cover_letter(resume_text, job_description):
+    system_prompt = """Generate a cover letter based on the resume and job description. Return the cover letter as a string."""
+    user_prompt = f"""Resume:\n
+{resume_text}
+Job Description:\n
+{job_description}"""
+    return generate_text(system_prompt, user_prompt)
+
+def generate_interview_questions(resume_text, job_description):
+    system_prompt = """Generate several interview questions and answers based on the resume and job description. Return the questions and answers as a string."""
+    user_prompt = f"""Resume:\n
+{resume_text}
+Job Description:\n
+{job_description}"""
+    return generate_text(system_prompt, user_prompt)
+
 
 # Initialize session state variables if they don't exist
 if "resume_text" not in st.session_state:
@@ -137,18 +153,34 @@ if st.button(
 ):
     if st.session_state.resume_text and st.session_state.job_description:
 
-        system_prompt = """Generate a cover letter based on the resume and job description. Return the cover letter as a string."""
-        user_prompt = f"""Resume:\n
-{st.session_state.resume_text}
-Job Description:\n
-{st.session_state.job_description}"""
         with st.spinner("Generating Cover letter..."):
-            st.session_state.cover_letter = generate_text(system_prompt, user_prompt)
+            st.session_state.cover_letter = generate_cover_letter(
+                st.session_state.resume_text, st.session_state.job_description
+            )
         st.write("#### Generated Cover Letter:")
         st.write(st.session_state.cover_letter)
         st.download_button(
             label="Download Cover Letter",
             data=st.session_state.cover_letter,
             file_name="cover_letter.txt",
+            mime="text/plain",
+        )
+
+if st.button(
+    "Generate Interview Questions",
+    help="Generate interview questions and answers based on the resume and job description",
+    use_container_width=True,
+):
+    if st.session_state.resume_text and st.session_state.job_description:
+        with st.spinner("Generating Interview Questions..."):
+            interview_questions = generate_interview_questions(
+                st.session_state.resume_text, st.session_state.job_description
+            )
+        st.write("#### Generated Interview Questions:")
+        st.write(interview_questions)
+        st.download_button(
+            label="Download Interview Questions",
+            data=interview_questions,
+            file_name="interview_questions.txt",
             mime="text/plain",
         )
