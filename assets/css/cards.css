@@ -16,7 +16,6 @@ button.tool-card {
     border: 1px solid var(--border-color);
     background-color: var(--background-color);
     cursor: pointer;
-    text-align: center;
 }
 
 .tool-emoji {
@@ -30,7 +29,6 @@ button.tool-card {
     margin: 25px 0 15px 0;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
-    text-align: center;
 }
 
 button.tool-card:hover {
