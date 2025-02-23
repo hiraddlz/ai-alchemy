@@ -141,6 +141,7 @@ for category, tools in PAGE_CONFIG.items():
                 help=tool["hover"],
                 on_click=handle_click,
                 args=(tool["filename"],),
+                use_container_width=True,
             ):
                 pass
 
