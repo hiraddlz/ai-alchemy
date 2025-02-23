@@ -113,10 +113,14 @@ if st.button(
     "Match", help="Analyze the resume and job description", use_container_width=True
 ):
     if st.session_state.resume_text and st.session_state.job_description:
-        with st.spinner("Evaluating resume..."):
-            st.session_state.result = match_resume_to_job(
-                st.session_state.resume_text, st.session_state.job_description
-            )
+        try:
+            with st.spinner("Evaluating resume..."):
+                st.session_state.result = match_resume_to_job(
+                    st.session_state.resume_text, st.session_state.job_description
+                )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            st.info("Please try again and make sure the resume and job description are in the correct format.")
         if st.session_state.result["match_score"] >= "80%":
             st.success(
                 f"Match Score: {st.session_state.result['match_score']} \n    🎉Perfect match! 🎉"
@@ -152,11 +156,14 @@ if st.button(
     use_container_width=True,
 ):
     if st.session_state.resume_text and st.session_state.job_description:
-
-        with st.spinner("Generating Cover letter..."):
-            st.session_state.cover_letter = generate_cover_letter(
-                st.session_state.resume_text, st.session_state.job_description
-            )
+        try:
+            with st.spinner("Generating Cover letter..."):
+                st.session_state.cover_letter = generate_cover_letter(
+                    st.session_state.resume_text, st.session_state.job_description
+                )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            st.info("Please try again and make sure the resume and job description are in the correct format.")
         st.write("#### Generated Cover Letter:")
         st.write(st.session_state.cover_letter)
         st.download_button(
@@ -172,10 +179,14 @@ if st.button(
     use_container_width=True,
 ):
     if st.session_state.resume_text and st.session_state.job_description:
-        with st.spinner("Generating Interview Questions..."):
-            interview_questions = generate_interview_questions(
-                st.session_state.resume_text, st.session_state.job_description
-            )
+        try:
+            with st.spinner("Generating Interview Questions..."):
+                interview_questions = generate_interview_questions(
+                    st.session_state.resume_text, st.session_state.job_description
+                )
+        except:
+            print(f"An error occurred: {e}")
+            st.info("Please try again and make sure the resume and job description are in the correct format.")
         st.write("#### Generated Interview Questions:")
         st.write(interview_questions)
         st.download_button(
