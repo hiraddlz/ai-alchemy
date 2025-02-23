@@ -54,7 +54,8 @@ Job Description:
 
 def generate_cover_letter(resume_text, job_description):
     system_prompt = """Generate a cover letter based on the resume and job description. Return the cover letter as a string."""
-    user_prompt = f"""Resume:\n
+    user_prompt = f"""Generate a cover letter.\n
+Resume:\n
 {resume_text}
 Job Description:\n
 {job_description}"""
@@ -62,7 +63,8 @@ Job Description:\n
 
 def generate_interview_questions(resume_text, job_description):
     system_prompt = """Generate several interview questions and answers based on the resume and job description. Return the questions and answers as a string."""
-    user_prompt = f"""Resume:\n
+    user_prompt = f"""Generate several interview questions and answers.\n
+Resume:\n
 {resume_text}
 Job Description:\n
 {job_description}"""
