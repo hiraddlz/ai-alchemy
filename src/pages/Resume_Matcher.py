@@ -37,7 +37,14 @@ Format strictly as:
 Job Description:
 {job_description}
 """
-    response = json_output(generate_text(system_prompt, user_prompt))
+    try:
+        response = json_output(generate_text(system_prompt, user_prompt))
+    except Exception as e:
+        response = {
+            "company_name": "unknown_company",
+            "job_title": "unknown_title",
+            "job_location": "unknown_location",
+        }
     return response
 
 def match_resume_to_job(resume_text, job_description):
@@ -146,7 +153,6 @@ if st.button(
                 st.session_state.result = match_resume_to_job(
                     st.session_state.resume_text, st.session_state.job_description
                 )
-                st.write(st.session_state.result)
         except Exception as e:
             print(f"An error occurred: {e}")
             st.info("Please try again and make sure the resume and job description are in the correct format.")
