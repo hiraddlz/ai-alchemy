@@ -184,7 +184,7 @@ if st.button(
                 interview_questions = generate_interview_questions(
                     st.session_state.resume_text, st.session_state.job_description
                 )
-        except:
+        except Exception as e:
             print(f"An error occurred: {e}")
             st.info("Please try again and make sure the resume and job description are in the correct format.")
         st.write("#### Generated Interview Questions:")
