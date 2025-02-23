@@ -6,5 +6,6 @@ pix2tex==0.1.4
 torch==2.4.0
 pytesseract
 redlines
+rembg
 pypdfium2
 docx2txt

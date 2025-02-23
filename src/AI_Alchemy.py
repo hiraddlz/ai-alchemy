@@ -58,6 +58,12 @@ PAGE_CONFIG = {
             "hover": "Convert images to ASCII art",
             "filename": "Ascii_Artist.py",
         },
+        {
+            "name": "Background Remover",
+            "emoji": "🖼️",
+            "hover": "Remove background from images",
+            "filename": "Background_Remover.py",
+        },
     ],
     "Language Tools": [
         {
