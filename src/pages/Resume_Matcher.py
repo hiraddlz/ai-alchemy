@@ -18,6 +18,27 @@ def extract_text_from_pdf(pdf_file):
 def extract_text_from_docx(docx_file):
     return docx2txt.process(docx_file)
 
+def extract_job_info(job_description):
+    system_prompt = """
+Extract the following information from the job description. Return a JSON dictionary with:
+1. company_name: The name of the company. Return "unknown" if not found.
+2. job_title: The job title. Return "unknown" if not found.
+3. job_location: The location of the job. Return "unknown" if not found.
+Format strictly as:
+```json
+{
+    "company_name": "XYZ",
+    "job_title": "Job Title",
+    "job_location": "City, State"
+}
+```
+"""
+    user_prompt = f"""
+Job Description:
+{job_description}
+"""
+    response = json_output(generate_text(system_prompt, user_prompt))
+    return response
 
 def match_resume_to_job(resume_text, job_description):
     system_prompt = """
@@ -38,7 +59,7 @@ Format strictly as:
     "Original Phrase 3": "Improved Version 3"  
   },  
   "skills_to_add": ["skill1", "skill2", ...],  
-  "skills_to_remove": ["skillA", "skillB", ...]  
+  "skills_to_remove": ["skillA", "skillB", ...],
 }  
 ```
 
@@ -46,6 +67,7 @@ Format strictly as:
     user_prompt = f"""
 Resume:
 {resume_text}
+---
 Job Description:
 {job_description}
 """
@@ -80,6 +102,10 @@ if "result" not in st.session_state:
     st.session_state.result = None
 if "cover_letter" not in st.session_state:
     st.session_state.cover_letter = ""
+if "interview_questions" not in st.session_state:
+    st.session_state.interview_questions = ""
+if "job_info" not in st.session_state:
+    st.session_state.job_info = None
 
 
 # Streamlit UI
@@ -120,6 +146,7 @@ if st.button(
                 st.session_state.result = match_resume_to_job(
                     st.session_state.resume_text, st.session_state.job_description
                 )
+                st.write(st.session_state.result)
         except Exception as e:
             print(f"An error occurred: {e}")
             st.info("Please try again and make sure the resume and job description are in the correct format.")
@@ -149,6 +176,16 @@ if st.button(
             for skill in st.session_state.result["skills_to_remove"]:
                 st.write(f"- :red[{skill}]")
 
+        if st.session_state.job_info is None:
+            with st.spinner("Preparing job description..."):
+                st.session_state.job_info = extract_job_info(st.session_state.job_description)
+
+        st.download_button(
+            label="Applied -> [Download Job Description]",
+            data=st.session_state.job_description,
+            file_name=f"job_description-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
+            mime="text/plain",
+        )
     else:
         st.warning("Please provide both resume and job description.")
 
@@ -168,10 +205,13 @@ if st.button(
             st.info("Please try again and make sure the resume and job description are in the correct format.")
         st.write("#### Generated Cover Letter:")
         st.write(st.session_state.cover_letter)
+        if st.session_state.job_info is None:
+            with st.spinner("Preparing cover letter..."):
+                st.session_state.job_info = extract_job_info(st.session_state.job_description)
         st.download_button(
             label="Download Cover Letter",
             data=st.session_state.cover_letter,
-            file_name="cover_letter.txt",
+            file_name=f"cover_letter-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
             mime="text/plain",
         )
 
