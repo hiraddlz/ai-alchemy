@@ -6,7 +6,7 @@ pix2tex
 torch
 pytesseract
 redlines
-rembg==2.0.50
+rembg
 pypdfium2
 docx2txt
 onnxruntime
