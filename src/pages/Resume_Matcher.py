@@ -3,7 +3,7 @@ import pypdfium2
 import streamlit as st
 from redlines import Redlines
 
-from tools.llm_utils import generate_text, json_output
+from tools.llm_utils import generate_text, json_output, stream_content
 
 
 def extract_text_from_pdf(pdf_file):
@@ -66,7 +66,7 @@ def generate_interview_questions(resume_text, job_description):
 {resume_text}
 Job Description:\n
 {job_description}"""
-    return generate_text(system_prompt, user_prompt)
+    return generate_text(system_prompt, user_prompt, stream=True)
 
 
 # Initialize session state variables if they don't exist
@@ -179,16 +179,9 @@ if st.button(
     use_container_width=True,
 ):
     if st.session_state.resume_text and st.session_state.job_description:
-        try:
-            with st.spinner("Generating Interview Questions..."):
-                interview_questions = generate_interview_questions(
+        interview_questions = st.write_stream(stream_content(generate_interview_questions(
                     st.session_state.resume_text, st.session_state.job_description
-                )
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            st.info("Please try again and make sure the resume and job description are in the correct format.")
-        st.write("#### Generated Interview Questions:")
-        st.write(interview_questions)
+                )))
         st.download_button(
             label="Download Interview Questions",
             data=interview_questions,
