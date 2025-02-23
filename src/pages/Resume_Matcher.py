@@ -18,7 +18,9 @@ def extract_text_from_pdf(pdf_file):
 def extract_text_from_docx(docx_file):
     return docx2txt.process(docx_file)
 
+
 def extract_job_info(job_description):
+    """Extract company name, job title, and location from the job description."""
     system_prompt = """
 Extract the following information from the job description. Return a JSON dictionary with:
 1. company_name: The name of the company. Return "unknown" if not found.
@@ -46,6 +48,7 @@ Job Description:
             "job_location": "unknown_location",
         }
     return response
+
 
 def match_resume_to_job(resume_text, job_description):
     system_prompt = """
@@ -81,6 +84,7 @@ Job Description:
     response = json_output(generate_text(system_prompt, user_prompt))
     return response
 
+
 def generate_cover_letter(resume_text, job_description):
     system_prompt = """Generate a cover letter based on the resume and job description. Return the cover letter as a string."""
     user_prompt = f"""Generate a cover letter.\n
@@ -89,6 +93,7 @@ Resume:\n
 Job Description:\n
 {job_description}"""
     return generate_text(system_prompt, user_prompt)
+
 
 def generate_interview_questions(resume_text, job_description):
     system_prompt = """Generate several interview questions and answers based on the resume and job description. Return the questions and answers as a string."""
@@ -155,7 +160,9 @@ if st.button(
                 )
         except Exception as e:
             print(f"An error occurred: {e}")
-            st.info("Please try again and make sure the resume and job description are in the correct format.")
+            st.info(
+                "Please try again and make sure the resume and job description are in the correct format."
+            )
         if st.session_state.result["match_score"] >= "80%":
             st.success(
                 f"Match Score: {st.session_state.result['match_score']} \n    🎉Perfect match! 🎉"
@@ -182,9 +189,10 @@ if st.button(
             for skill in st.session_state.result["skills_to_remove"]:
                 st.write(f"- :red[{skill}]")
 
-        if st.session_state.job_info is None:
-            with st.spinner("Preparing job description..."):
-                st.session_state.job_info = extract_job_info(st.session_state.job_description)
+        with st.spinner("Preparing job description..."):
+            st.session_state.job_info = extract_job_info(
+                st.session_state.job_description
+            )
 
         st.download_button(
             label="Applied -> [Download Job Description]",
@@ -208,12 +216,15 @@ if st.button(
                 )
         except Exception as e:
             print(f"An error occurred: {e}")
-            st.info("Please try again and make sure the resume and job description are in the correct format.")
+            st.info(
+                "Please try again and make sure the resume and job description are in the correct format."
+            )
         st.write("#### Generated Cover Letter:")
         st.write(st.session_state.cover_letter)
-        if st.session_state.job_info is None:
-            with st.spinner("Preparing cover letter..."):
-                st.session_state.job_info = extract_job_info(st.session_state.job_description)
+        with st.spinner("Preparing cover letter..."):
+            st.session_state.job_info = extract_job_info(
+                st.session_state.job_description
+            )
         st.download_button(
             label="Download Cover Letter",
             data=st.session_state.cover_letter,
@@ -221,15 +232,20 @@ if st.button(
             mime="text/plain",
         )
 
+
 if st.button(
     "Generate Interview Questions",
     help="Generate interview questions and answers based on the resume and job description",
     use_container_width=True,
 ):
     if st.session_state.resume_text and st.session_state.job_description:
-        interview_questions = st.write_stream(stream_content(generate_interview_questions(
+        interview_questions = st.write_stream(
+            stream_content(
+                generate_interview_questions(
                     st.session_state.resume_text, st.session_state.job_description
-                )))
+                )
+            )
+        )
         st.download_button(
             label="Download Interview Questions",
             data=interview_questions,

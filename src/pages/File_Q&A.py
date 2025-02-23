@@ -23,7 +23,7 @@ question = st.text_input(
 # Handle file upload and system message
 if uploaded_file:
     article = uploaded_file.read().decode()
-    
+
     # Only add the system message if it's not already in the chat history
     if not any(msg["role"] == "system" for msg in st.session_state.messages):
         system_prompt = (
@@ -38,18 +38,18 @@ if question and uploaded_file:
     # Add user message
     user_message = {"role": "user", "content": question}
     st.session_state.messages.append(user_message)
-    
+
     # Generate response
     stream = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.messages,
         stream=True,
     )
-    
+
     # Display answer
     st.write("### Answer")
     response = st.write_stream(stream_content(stream))
-    
+
     # Add assistant message
     assistant_message = {"role": "assistant", "content": response}
     st.session_state.messages.append(assistant_message)
