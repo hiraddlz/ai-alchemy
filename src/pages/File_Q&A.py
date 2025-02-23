@@ -1,33 +1,55 @@
 import streamlit as st
-import anthropic
+from g4f.client import Client
+from tools.llm_utils import stream_content
 
-with st.sidebar:
-    anthropic_api_key = st.text_input(
-        "Anthropic API Key", key="file_qa_api_key", type="password"
-    )
+client = Client()
 
-st.title("📝 File Q&A with Anthropic")
+st.title("📝 File Q&A")
+
+# Initialize chat history if it doesn't exist
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# File uploader
 uploaded_file = st.file_uploader("Upload an article", type=("txt", "md"))
+
+# Question input
 question = st.text_input(
     "Ask something about the article",
     placeholder="Can you give me a short summary?",
     disabled=not uploaded_file,
 )
 
-if uploaded_file and question and not anthropic_api_key:
-    st.info("Please add your Anthropic API key to continue.")
-
-if uploaded_file and question and anthropic_api_key:
+# Handle file upload and system message
+if uploaded_file:
     article = uploaded_file.read().decode()
-    prompt = f"""{anthropic.HUMAN_PROMPT} Here's an article:\n\n<article>
-    {article}\n\n</article>\n\n{question}{anthropic.AI_PROMPT}"""
+    
+    # Only add the system message if it's not already in the chat history
+    if not any(msg["role"] == "system" for msg in st.session_state.messages):
+        system_prompt = (
+            f"You are a helpful assistant analyzing the following article:\n\n"
+            f"<article>\n{article}\n</article>\n\n"
+            f"Please answer questions based only on the information provided in this article."
+        )
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
 
-    client = anthropic.Client(api_key=anthropic_api_key)
-    response = client.completions.create(
-        prompt=prompt,
-        stop_sequences=[anthropic.HUMAN_PROMPT],
-        model="claude-v1",  # "claude-2" for Claude 2 model
-        max_tokens_to_sample=100,
+# Handle question and generate response
+if question and uploaded_file:
+    # Add user message
+    user_message = {"role": "user", "content": question}
+    st.session_state.messages.append(user_message)
+    
+    # Generate response
+    stream = client.chat.completions.create(
+        model="gpt-4",
+        messages=st.session_state.messages,
+        stream=True,
     )
+    
+    # Display answer
     st.write("### Answer")
-    st.write(response.completion)
+    response = st.write_stream(stream_content(stream))
+    
+    # Add assistant message
+    assistant_message = {"role": "assistant", "content": response}
+    st.session_state.messages.append(assistant_message)
