@@ -70,3 +70,20 @@ def json_output(answer):
     processed_text = processed_text.replace("'", '"')
     processed_text = processed_text.replace("\n", "")
     return json.loads(processed_text)
+
+
+def remove_triple_backticks(text):
+    """
+    Removes triple backticks from the beginning and end of a string, if present.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        str: The string with triple backticks removed, or the original string if not found.
+    """
+    if text.startswith("```"):
+        text = text[3:]  # Remove leading backticks
+    if text.endswith("```"):
+        text = text[:-3]  # Remove trailing backticks
+    return text.strip()  # Remove any leading or trailing whitespace.
