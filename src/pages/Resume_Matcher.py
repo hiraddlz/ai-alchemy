@@ -41,39 +41,42 @@ Format strictly as:
 Job Description:\n
 {job_description}
 """
-    
+
     # Initialize default response in case all attempts fail
     default_response = {
         "company_name": "unknown",
         "job_title": "unknown",
         "job_location": "unknown",
     }
-    
+
     # Try up to 3 times to get a valid JSON response
     for attempt in range(max_attempts):
         try:
             response = json_output(generate_text(system_prompt, user_prompt))
-            st.write(response)
-            
+
             # Ensure all required fields exist, replace with "unknown" if missing or empty
             validated_response = default_response.copy()
             for key in default_response:
-                if key in response and response[key] and response[key].strip().lower() != "unknown":
+                if (
+                    key in response
+                    and response[key]
+                    and response[key].strip().lower() != "unknown"
+                ):
                     validated_response[key] = response[key]
-            
+
             return validated_response
-            
+
         except Exception as e:
             # If this is the last attempt, return the default response
             if attempt == max_attempts - 1:
                 return default_response
             # Otherwise, continue to the next attempt
-    
+
     # This should never be reached, but included for completeness
     return default_response
 
 
-def match_resume_to_job(resume_text, job_description, max_attempts = 3):
+def match_resume_to_job(resume_text, job_description, max_attempts=3):
     system_prompt = """
 Analyze the following resume and job description. Return a JSON dictionary with:
 1. match_score (0-100%) based on keyword alignment, experience relevance, and skill overlap.
@@ -202,15 +205,18 @@ st.subheader("Generation Options")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    run_match = st.checkbox("Match Resume", 
-                         help="Analyze the resume and job description",
-                         value=True)
+    run_match = st.checkbox(
+        "Match Resume", help="Analyze the resume and job description", value=True
+    )
 with col2:
-    run_cover_letter = st.checkbox("Cover Letter", 
-                                help="Generate a cover letter based on the resume and job description")
+    run_cover_letter = st.checkbox(
+        "Cover Letter",
+        help="Generate a cover letter based on the resume and job description",
+    )
 with col3:
-    run_interview = st.checkbox("Interview Questions", 
-                             help="Generate interview questions and answers")
+    run_interview = st.checkbox(
+        "Interview Questions", help="Generate interview questions and answers"
+    )
 
 # Add a button to run the selected functions
 if st.button("Run Selected Options", use_container_width=True):
@@ -228,7 +234,9 @@ if st.button("Run Selected Options", use_container_width=True):
         st.write("### Job Details")
         st.write(f":briefcase: **Job Title:** {st.session_state.job_info['job_title']}")
         st.write(f":office: **Company:** {st.session_state.job_info['company_name']}")
-        st.write(f":round_pushpin: **Location:** {st.session_state.job_info['job_location']}")
+        st.write(
+            f":round_pushpin: **Location:** {st.session_state.job_info['job_location']}"
+        )
 
         if run_match:
             try:
@@ -242,8 +250,6 @@ if st.button("Run Selected Options", use_container_width=True):
                 st.info(
                     "Please try again and make sure the resume and job description are in the correct format."
                 )
-            
-
 
             st.download_button(
                 label="Applied -> [Download Job Description]",
@@ -257,16 +263,20 @@ if st.button("Run Selected Options", use_container_width=True):
             try:
                 st.write("#### Generated Cover Letter:")
                 with st.spinner("Generating Cover letter..."):
-                    st.session_state.cover_letter = st.write_stream(stream_content(generate_cover_letter(
-                        st.session_state.resume_text, st.session_state.job_description
-                    )))
+                    st.session_state.cover_letter = st.write_stream(
+                        stream_content(
+                            generate_cover_letter(
+                                st.session_state.resume_text,
+                                st.session_state.job_description,
+                            )
+                        )
+                    )
             except Exception as e:
                 print(f"An error occurred: {e}")
                 st.info(
                     "Please try again and make sure the resume and job description are in the correct format."
                 )
-            
-                    
+
             st.download_button(
                 label="Download Cover Letter",
                 data=st.session_state.cover_letter,
