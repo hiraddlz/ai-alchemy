@@ -6,8 +6,45 @@ from redlines import Redlines  # Import Redlines
 from tools.image_utils import ocr
 from tools.llm_utils import generate_text, json_output
 
+def ielts_examiner(ielts_writing, max_attempts=3):
+    system_prompt = """You are an expert IELTS writing examiner. You assess the given essay and provide feedback, identify mistakes, and suggest corrections.
+                Your output must be a JSON following this structure:
+                Format strictly as:
+                ```json
+                {
+                    'band': the band score (e.g., 7.0, 8.5),
+                    'feedback': your feedback (maximum 100 words),
+                    'mistakes': [{'mistake': the whole sentence, 'correction': a correction for that sentence}]
+                }```
+                """
+    user_prompt = f"""
+ielts_writing:\n
+{ielts_writing}
+"""
+    for attempt in range(max_attempts):
+        try:
+            return json_output(generate_text(system_prompt, user_prompt))
+        except Exception as e:
+            # If this is the last attempt, return None
+            if attempt == max_attempts - 1:
+                return None
+            
+def show_ielts_result(result):
+    st.success(f"🎉 Score: {result['band']} / 9")
+    st.subheader("📝 Feedback:")
+    st.write(result['feedback'])
+    st.subheader("⚠️ Mistakes and Corrections:")
+    for i, mistake in enumerate(result["mistakes"]):
+        st.markdown("---")
+        st.write(f"**Mistake {i+1}:** {mistake['mistake']}")
+        st.write(f"**Correction {i+1}:** {mistake['correction']}")
+        # Generate and display the diff
+        with st.expander(f"## 🔍 See Changes Highlighted (Mistake {i+1})"):
+            diff = Redlines(mistake['mistake'], mistake['correction'])
+            st.markdown(diff.output_markdown, unsafe_allow_html=True)
+            
 
-def IELTS_Examiner():
+def main():
     """IELTS Writing Examiner App."""
 
     st.title("📝 IELTS Writing Examiner 🎓")
@@ -34,34 +71,14 @@ def IELTS_Examiner():
                 return
 
             with st.spinner("🔄 Evaluating..."):
-                system_prompt = """You are an expert IELTS writing examiner. You assess the given essay and provide feedback, identify mistakes, and suggest corrections.
-                Your output must be a JSON following this structure:
-                {
-                    'band': the band score (e.g., 7.0, 8.5),
-                    'feedback': your feedback (maximum 100 words),
-                    'mistakes': [{'mistake': the whole sentence, 'correction': a correction for that sentence}]
-                }"""
-
+                
                 try:
-                    evaluation = generate_text(system_prompt, input_text)
-                    result = json_output(evaluation)
-                    st.success(f"🎉 Score: {result['band']} / 9")
-                    st.subheader("📝 Feedback:")
-                    st.write(result['feedback'])
-                    st.subheader("⚠️ Mistakes and Corrections:")
-                    for i, mistake in enumerate(result["mistakes"]):
-                        st.markdown("---")
-                        st.write(f"**Mistake {i+1}:** {mistake['mistake']}")
-                        st.write(f"**Correction {i+1}:** {mistake['correction']}")
-                        # Generate and display the diff
-                        with st.expander(f"## 🔍 See Changes Highlighted (Mistake {i+1})"):
-                            diff = Redlines(mistake['mistake'], mistake['correction'])
-                            st.markdown(diff.output_markdown, unsafe_allow_html=True)
-
+                    result = ielts_examiner(input_text)
+                    show_ielts_result(result)
                 except Exception as e:
                     print(f"Error: {str(e)}")
                     st.error("An error occurred during evaluation. Please try again.")
 
 
 if __name__ == '__main__':
-    IELTS_Examiner()
+    main()
