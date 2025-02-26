@@ -125,7 +125,7 @@ def show_match_result(match_result):
         st.error(f"❌ Match Score: {match_result['match_score']} 💔")
 
     st.markdown("### ✏️ Revised Professional Summary")
-    st.write(f"📝 {match_result['revised_summary']}")
+    st.code(f"{match_result['revised_summary']}", language=None, wrap_lines=True)
 
     st.markdown("### 🔄 Phrases to Improve")
     for orig, improved in match_result["resume_phrases_to_adjust"].items():
