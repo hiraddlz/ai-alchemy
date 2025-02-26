@@ -32,7 +32,7 @@ def main():
                     Focus on delivering a clear and concise message directly derived from the input text.
                     Only use information from the provided text. Do not hallucinate or add any other information.
                     """
-                user_prompt = f"""Just give me the revised version of the text in the triple backticks to put in my {social_media}\n
+                user_prompt = f"""Just give me the revised version of the text in the triple backticks to put in my {social_media} with a {tone} tone.\n
                 ```
                 {input_text}
                 ```"""
