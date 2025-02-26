@@ -1,3 +1,5 @@
+import base64
+
 import docx2txt
 import pypdfium2
 import streamlit as st
@@ -19,7 +21,7 @@ def extract_text_from_docx(docx_file):
     return docx2txt.process(docx_file)
 
 
-def extract_job_info(job_description):
+def extract_job_info(job_description, max_attempts=3):
     """Extract company name, job title, and location from the job description."""
     system_prompt = """
 Extract the following information from the job description. Return a JSON dictionary with:
@@ -36,21 +38,42 @@ Format strictly as:
 ```
 """
     user_prompt = f"""
-Job Description:
+Job Description:\n
 {job_description}
 """
-    try:
-        response = json_output(generate_text(system_prompt, user_prompt))
-    except Exception as e:
-        response = {
-            "company_name": "unknown_company",
-            "job_title": "unknown_title",
-            "job_location": "unknown_location",
-        }
-    return response
+    
+    # Initialize default response in case all attempts fail
+    default_response = {
+        "company_name": "unknown",
+        "job_title": "unknown",
+        "job_location": "unknown",
+    }
+    
+    # Try up to 3 times to get a valid JSON response
+    for attempt in range(max_attempts):
+        try:
+            response = json_output(generate_text(system_prompt, user_prompt))
+            st.write(response)
+            
+            # Ensure all required fields exist, replace with "unknown" if missing or empty
+            validated_response = default_response.copy()
+            for key in default_response:
+                if key in response and response[key] and response[key].strip().lower() != "unknown":
+                    validated_response[key] = response[key]
+            
+            return validated_response
+            
+        except Exception as e:
+            # If this is the last attempt, return the default response
+            if attempt == max_attempts - 1:
+                return default_response
+            # Otherwise, continue to the next attempt
+    
+    # This should never be reached, but included for completeness
+    return default_response
 
 
-def match_resume_to_job(resume_text, job_description):
+def match_resume_to_job(resume_text, job_description, max_attempts = 3):
     system_prompt = """
 Analyze the following resume and job description. Return a JSON dictionary with:
 1. match_score (0-100%) based on keyword alignment, experience relevance, and skill overlap.
@@ -81,8 +104,40 @@ Resume:
 Job Description:
 {job_description}
 """
-    response = json_output(generate_text(system_prompt, user_prompt))
-    return response
+    for attempt in range(max_attempts):
+        try:
+            return json_output(generate_text(system_prompt, user_prompt))
+        except Exception as e:
+            # If this is the last attempt, return None
+            if attempt == max_attempts - 1:
+                return None
+
+
+def show_match_result(match_result):
+    st.subheader("🔍 Match Analysis")
+
+    if match_result["match_score"] >= "80%":
+        st.success(f"Match Score: {match_result['match_score']} 🎉")
+    else:
+        st.warning(f"Match Score: {match_result['match_score']}")
+
+    st.markdown("### Revised Professional Summary")
+    st.write(match_result["revised_summary"])
+
+    st.markdown("### Phrases to Improve")
+    for orig, improved in match_result["resume_phrases_to_adjust"].items():
+        diff = Redlines(orig, improved)
+        st.markdown(diff.output_markdown, unsafe_allow_html=True)
+
+    cols = st.columns(2)
+    with cols[0]:
+        st.markdown("### Skills to Add")
+        for skill in match_result["skills_to_add"]:
+            st.markdown(f"- ✅ :green[{skill}]")
+    with cols[1]:
+        st.markdown("### Skills to Remove")
+        for skill in match_result["skills_to_remove"]:
+            st.markdown(f"- ❌ :red[{skill}]")
 
 
 def generate_cover_letter(resume_text, job_description):
@@ -92,7 +147,7 @@ Resume:\n
 {resume_text}
 Job Description:\n
 {job_description}"""
-    return generate_text(system_prompt, user_prompt)
+    return generate_text(system_prompt, user_prompt, stream=True)
 
 
 def generate_interview_questions(resume_text, job_description):
@@ -110,14 +165,6 @@ if "resume_text" not in st.session_state:
     st.session_state.resume_text = ""
 if "job_description" not in st.session_state:
     st.session_state.job_description = ""
-if "result" not in st.session_state:
-    st.session_state.result = None
-if "cover_letter" not in st.session_state:
-    st.session_state.cover_letter = ""
-if "interview_questions" not in st.session_state:
-    st.session_state.interview_questions = ""
-if "job_info" not in st.session_state:
-    st.session_state.job_info = None
 
 
 # Streamlit UI
@@ -125,130 +172,121 @@ st.set_page_config(layout="wide")
 st.title("📄Resume Matcher")
 st.subheader("Match resumes with job descriptions using AI")
 
-col1, col2 = st.columns(2)
+# Initialize session state
+if "generated" not in st.session_state:
+    st.session_state.generated = {
+        "cover_letter": False,
+        "interview_questions": False,
+        "match": False,
+    }
 
+# File upload and job description input
+col1, col2 = st.columns(2)
 with col1:
     st.header("Upload Resume")
     uploaded_file = st.file_uploader("Upload PDF or DOCX", type=["pdf", "docx"])
-    # resume_text = ""
-
     if uploaded_file is not None:
         if uploaded_file.name.endswith(".pdf"):
             st.session_state.resume_text = extract_text_from_pdf(uploaded_file)
         elif uploaded_file.name.endswith(".docx"):
             st.session_state.resume_text = extract_text_from_docx(uploaded_file)
 
-    # Manual resume input
-    # resume_text_manual = st.text_area("Or write your resume manually:", height=300)
-    # if resume_text_manual:
-    #     resume_text = resume_text_manual
-
 with col2:
     st.header("Job Description")
     job_desc_input = st.text_area("Paste the job description here:", height=400)
     st.session_state.job_description = job_desc_input
 
+# Generation controls
+st.subheader("Generation Options")
+# Add checkboxes to select which functions to run
+col1, col2, col3 = st.columns(3)
 
-if st.button(
-    "Match", help="Analyze the resume and job description", use_container_width=True
-):
-    if st.session_state.resume_text and st.session_state.job_description:
-        try:
-            with st.spinner("Evaluating resume..."):
-                st.session_state.result = match_resume_to_job(
-                    st.session_state.resume_text, st.session_state.job_description
-                )
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            st.info(
-                "Please try again and make sure the resume and job description are in the correct format."
-            )
-        if st.session_state.result["match_score"] >= "80%":
-            st.success(
-                f"Match Score: {st.session_state.result['match_score']} \n    🎉Perfect match! 🎉"
-            )
-        else:
-            st.warning(f"Match Score: {st.session_state.result['match_score']}")
+with col1:
+    run_match = st.checkbox("Match Resume", 
+                         help="Analyze the resume and job description",
+                         value=True)
+with col2:
+    run_cover_letter = st.checkbox("Cover Letter", 
+                                help="Generate a cover letter based on the resume and job description")
+with col3:
+    run_interview = st.checkbox("Interview Questions", 
+                             help="Generate interview questions and answers")
 
-        st.write("### Revised Professional Summary:")
-        st.write(st.session_state.result["revised_summary"])
-        st.write("### Phrases to Adjust:")
-        for original, improved in st.session_state.result[
-            "resume_phrases_to_adjust"
-        ].items():
-            diff = Redlines(original, improved)
-            st.markdown(f"- {diff.output_markdown}", unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("### Skills to Add:")
-            for skill in st.session_state.result["skills_to_add"]:
-                st.write(f"- :green[{skill}]")
-        with col2:
-            st.write("### Skills to Remove:")
-            for skill in st.session_state.result["skills_to_remove"]:
-                st.write(f"- :red[{skill}]")
-
+# Add a button to run the selected functions
+if st.button("Run Selected Options", use_container_width=True):
+    if not (run_match or run_cover_letter or run_interview):
+        st.warning("Please select at least one option.")
+    elif not (st.session_state.resume_text and st.session_state.job_description):
+        st.warning("Please provide both resume and job description.")
+    else:
+        # Run the match function if selected
         with st.spinner("Preparing job description..."):
             st.session_state.job_info = extract_job_info(
                 st.session_state.job_description
             )
+        # Write the job info results
+        st.write("### Job Details")
+        st.write(f":briefcase: **Job Title:** {st.session_state.job_info['job_title']}")
+        st.write(f":office: **Company:** {st.session_state.job_info['company_name']}")
+        st.write(f":round_pushpin: **Location:** {st.session_state.job_info['job_location']}")
 
-        st.download_button(
-            label="Applied -> [Download Job Description]",
-            data=st.session_state.job_description,
-            file_name=f"job_description-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
-            mime="text/plain",
-        )
-    else:
-        st.warning("Please provide both resume and job description.")
-
-if st.button(
-    "Generate Cover Letter",
-    help="Generate a cover letter based on the resume and job description",
-    use_container_width=True,
-):
-    if st.session_state.resume_text and st.session_state.job_description:
-        try:
-            with st.spinner("Generating Cover letter..."):
-                st.session_state.cover_letter = generate_cover_letter(
-                    st.session_state.resume_text, st.session_state.job_description
+        if run_match:
+            try:
+                with st.spinner("Evaluating resume..."):
+                    st.session_state.result = match_resume_to_job(
+                        st.session_state.resume_text, st.session_state.job_description
+                    )
+                show_match_result(st.session_state.result)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                st.info(
+                    "Please try again and make sure the resume and job description are in the correct format."
                 )
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            st.info(
-                "Please try again and make sure the resume and job description are in the correct format."
-            )
-        st.write("#### Generated Cover Letter:")
-        st.write(st.session_state.cover_letter)
-        with st.spinner("Preparing cover letter..."):
-            st.session_state.job_info = extract_job_info(
-                st.session_state.job_description
-            )
-        st.download_button(
-            label="Download Cover Letter",
-            data=st.session_state.cover_letter,
-            file_name=f"cover_letter-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
-            mime="text/plain",
-        )
+            
 
 
-if st.button(
-    "Generate Interview Questions",
-    help="Generate interview questions and answers based on the resume and job description",
-    use_container_width=True,
-):
-    if st.session_state.resume_text and st.session_state.job_description:
-        interview_questions = st.write_stream(
-            stream_content(
-                generate_interview_questions(
-                    st.session_state.resume_text, st.session_state.job_description
+            st.download_button(
+                label="Applied -> [Download Job Description]",
+                data=st.session_state.job_description,
+                file_name=f"job_description-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
+                mime="text/plain",
+            )
+
+        # Run the cover letter function if selected
+        if run_cover_letter:
+            try:
+                st.write("#### Generated Cover Letter:")
+                with st.spinner("Generating Cover letter..."):
+                    st.session_state.cover_letter = st.write_stream(stream_content(generate_cover_letter(
+                        st.session_state.resume_text, st.session_state.job_description
+                    )))
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                st.info(
+                    "Please try again and make sure the resume and job description are in the correct format."
+                )
+            
+                    
+            st.download_button(
+                label="Download Cover Letter",
+                data=st.session_state.cover_letter,
+                file_name=f"cover_letter-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
+                mime="text/plain",
+            )
+
+        # Run the interview questions function if selected
+        if run_interview:
+            st.write("#### Generated Interview Questions:")
+            interview_questions = st.write_stream(
+                stream_content(
+                    generate_interview_questions(
+                        st.session_state.resume_text, st.session_state.job_description
+                    )
                 )
             )
-        )
-        st.download_button(
-            label="Download Interview Questions",
-            data=interview_questions,
-            file_name="interview_questions.txt",
-            mime="text/plain",
-        )
+            st.download_button(
+                label="Download Interview Questions",
+                data=interview_questions,
+                file_name="interview_questions.txt",
+                mime="text/plain",
+            )
