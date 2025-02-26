@@ -10,3 +10,4 @@ rembg
 pypdfium2
 docx2txt
 onnxruntime
+pyperclip
