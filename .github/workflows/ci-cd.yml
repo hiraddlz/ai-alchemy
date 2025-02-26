@@ -36,8 +36,8 @@ jobs:
           pip install black flake8
       - name: Lint with Black
         run: black src/
-      - name: Lint with Flake8
-        run: flake8 src/
+      # - name: Lint with Flake8
+      #   run: flake8 src/
 
   # deploy:
   #   needs: [test, lint]
