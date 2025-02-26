@@ -116,6 +116,7 @@ Job Description:
 
 def show_match_result(match_result):
     st.subheader("🔍 Match Analysis 📊")
+    
 
     if match_result["match_score"] >= "80%":
         st.success(f"🌟 Match Score: {match_result['match_score']} 🎉")
