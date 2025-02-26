@@ -1,44 +1,45 @@
 import streamlit as st
+from tools.llm_utils import generate_text, stream_content
 
-from tools.llm_utils import generate_text
+def main():
+    """Content Repurposer App."""
 
-
-def content_repurposer():
-    st.title("📑 Content Repurposer")
-
-    col1, col2 = st.columns([3, 2])
-
-    with col1:
-        input_text = st.text_area("Paste your content here:", height=300)
-        st.session_state.tone = st.selectbox(
-            "Select Tone:", ("Casual", "Professional", "Humorous")
-        )
-        st.session_state.social_media = st.selectbox(
-            "Select Social Media:", ("Linkedin", "Twitter")
-        )
-
-        if st.button("Generate"):
-            with st.spinner("Repurposing content..."):
-                if st.session_state.social_media == "Linkedin":
-                    system_prompt = """You're a professional content repurposing expert. 
-                    Generate a LinkedIn post with hashtags and emojis
-                    Keep tone: {tone}""".format(
-                        tone=st.session_state.tone
-                    )
-
-                elif st.session_state.social_media == "Twitter":
-                    system_prompt = """You're a professional content repurposing expert. 
-                    Generate A 280-character tweet with hashtags
-                    Keep tone: {tone}""".format(
-                        tone=st.session_state.tone
-                    )
-                st.session_state.output = generate_text(system_prompt, input_text)
-
-    with col2:
-        if "output" in st.session_state:
-            with st.expander("Social Media Post", expanded=True):
-                st.write(st.session_state.output)
-                st.button("📋 Copy", key="copy")
+    st.title("📑 Content Repurposer 🔄")
+    st.write("✨ Transform your content for different social media platforms. ✨")
 
 
-content_repurposer()
+    input_text = st.text_area("✍️ Paste your content here:", height=250)
+    tone = st.selectbox("🎭 Select Tone:", ("Casual", "Professional", "Humorous"))
+    social_media = st.selectbox("📱 Select Social Media:", ("LinkedIn", "Twitter"))
+
+    if st.button("🚀 Generate Repurposed Content"):
+        if input_text:
+            with st.spinner("🔄 Repurposing content..."):
+                if social_media == "LinkedIn":
+                    system_prompt = f"""
+                    You are an expert in repurposing content for LinkedIn. 
+                    Given the following text, create a LinkedIn post that maintains a {tone} tone. 
+                    Include relevant hashtags and emojis to enhance engagement. 
+                    Focus on delivering a clear and concise message directly derived from the input text.
+                    Only use information from the provided text. Do not hallucinate or add any other information.
+                    Just give me the final text to put in my linkedin.
+                    """
+                elif social_media == "Twitter":
+                    system_prompt = f"""
+                    You are an expert in repurposing content for Twitter. 
+                    Given the following text, create a tweet (maximum 280 characters) that maintains a {tone} tone. 
+                    Include relevant hashtags. 
+                    Focus on delivering a clear and concise message directly derived from the input text.
+                    Only use information from the provided text. Do not hallucinate or add any other information.
+                    """
+                user_prompt = f"""Just give me the revised version of the text in the triple backticks to put in my {social_media}\n
+                ```
+                {input_text}
+                ```"""
+                output = st.write_stream(stream_content(generate_text(system_prompt, user_prompt, stream=True)))
+                st.session_state.output = output  # Store in session state
+        else:
+            st.warning("⚠️ Please paste some content to repurpose. ⚠️")
+
+if __name__ == '__main__':
+    main()
