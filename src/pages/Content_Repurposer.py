@@ -1,12 +1,12 @@
 import streamlit as st
 from tools.llm_utils import generate_text, stream_content
 
+
 def main():
     """Content Repurposer App."""
 
     st.title("📑 Content Repurposer 🔄")
     st.write("✨ Transform your content for different social media platforms. ✨")
-
 
     input_text = st.text_area("✍️ Paste your content here:", height=250)
     tone = st.selectbox("🎭 Select Tone:", ("Casual", "Professional", "Humorous"))
@@ -36,10 +36,15 @@ def main():
                 ```
                 {input_text}
                 ```"""
-                output = st.write_stream(stream_content(generate_text(system_prompt, user_prompt, stream=True)))
+                output = st.write_stream(
+                    stream_content(
+                        generate_text(system_prompt, user_prompt, stream=True)
+                    )
+                )
                 st.session_state.output = output  # Store in session state
         else:
             st.warning("⚠️ Please paste some content to repurpose. ⚠️")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -10,7 +10,11 @@ def main():
     st.write("✨ Describe an object, and AI will create ASCII art for you. ✨")
 
     with st.form("ascii_artist_form"):
-        input_text = st.text_area("✍️ Enter the object you want to draw in ASCII art:", height=150, value='Dog!')
+        input_text = st.text_area(
+            "✍️ Enter the object you want to draw in ASCII art:",
+            height=150,
+            value="Dog!",
+        )
         submitted = st.form_submit_button("🚀 Generate ASCII Art")
 
         if submitted:
@@ -23,5 +27,6 @@ def main():
             else:
                 st.warning("⚠️ Please enter an object to generate ASCII art. ⚠️")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
