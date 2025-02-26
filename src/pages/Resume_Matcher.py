@@ -1,5 +1,3 @@
-import base64
-
 import docx2txt
 import pypdfium2
 import streamlit as st
@@ -117,28 +115,30 @@ Job Description:
 
 
 def show_match_result(match_result):
-    st.subheader("🔍 Match Analysis")
+    st.subheader("🔍 Match Analysis 📊")
 
     if match_result["match_score"] >= "80%":
-        st.success(f"Match Score: {match_result['match_score']} 🎉")
+        st.success(f"🌟 Match Score: {match_result['match_score']} 🎉")
+    elif match_result["match_score"] >= "60%":
+        st.warning(f"⚠️ Match Score: {match_result['match_score']} 🔄")
     else:
-        st.warning(f"Match Score: {match_result['match_score']}")
+        st.error(f"❌ Match Score: {match_result['match_score']} 💔")
 
-    st.markdown("### Revised Professional Summary")
-    st.write(match_result["revised_summary"])
+    st.markdown("### ✏️ Revised Professional Summary")
+    st.write(f"📝 {match_result['revised_summary']}")
 
-    st.markdown("### Phrases to Improve")
+    st.markdown("### 🔄 Phrases to Improve")
     for orig, improved in match_result["resume_phrases_to_adjust"].items():
         diff = Redlines(orig, improved)
         st.markdown(diff.output_markdown, unsafe_allow_html=True)
 
     cols = st.columns(2)
     with cols[0]:
-        st.markdown("### Skills to Add")
+        st.markdown("### 🌱 Skills to Add")
         for skill in match_result["skills_to_add"]:
             st.markdown(f"- ✅ :green[{skill}]")
     with cols[1]:
-        st.markdown("### Skills to Remove")
+        st.markdown("### 🗑️ Skills to Remove")
         for skill in match_result["skills_to_remove"]:
             st.markdown(f"- ❌ :red[{skill}]")
 
@@ -172,8 +172,8 @@ if "job_description" not in st.session_state:
 
 # Streamlit UI
 st.set_page_config(layout="wide")
-st.title("📄Resume Matcher")
-st.subheader("Match resumes with job descriptions using AI")
+st.title("📄 Resume Matcher 🤖")
+st.subheader("🔍 Match resumes with job descriptions using AI 💼")
 
 # Initialize session state
 if "generated" not in st.session_state:
@@ -200,22 +200,20 @@ with col2:
     st.session_state.job_description = job_desc_input
 
 # Generation controls
-st.subheader("Generation Options")
-# Add checkboxes to select which functions to run
+st.subheader("🚀 Generation Options")
 col1, col2, col3 = st.columns(3)
-
 with col1:
     run_match = st.checkbox(
-        "Match Resume", help="Analyze the resume and job description", value=True
+        "🔍 Analyze Match", help="Analyze the resume and job description", value=True
     )
 with col2:
     run_cover_letter = st.checkbox(
-        "Cover Letter",
-        help="Generate a cover letter based on the resume and job description",
+        "✉️ Generate Cover Letter",
+        help="Create a tailored cover letter based on the resume and job description",
     )
 with col3:
     run_interview = st.checkbox(
-        "Interview Questions", help="Generate interview questions and answers"
+        "🎤 Interview Prep", help="Generate potential interview questions and answers"
     )
 
 # Add a button to run the selected functions
@@ -231,7 +229,7 @@ if st.button("Run Selected Options", use_container_width=True):
                 st.session_state.job_description
             )
         # Write the job info results
-        st.write("### Job Details")
+        st.write("### 💼 Job Details")
         st.write(f":briefcase: **Job Title:** {st.session_state.job_info['job_title']}")
         st.write(f":office: **Company:** {st.session_state.job_info['company_name']}")
         st.write(
