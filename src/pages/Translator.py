@@ -1,6 +1,7 @@
 import streamlit as st
 from tools.llm_utils import generate_text, stream_content
 
+
 def main():
     st.title("🌐 LLM Translator 📝")
     st.write(
@@ -50,6 +51,7 @@ def main():
 
         else:
             st.warning("⚠️ Please enter some text to translate. ⚠️")
+
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 import streamlit as st
 from tools.llm_utils import generate_text, stream_content
 
+
 def summarizer():
     """AI Summarizer App."""
 
@@ -23,5 +24,6 @@ def summarizer():
             else:
                 st.warning("⚠️ Please paste some text to summarize. ⚠️")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     summarizer()

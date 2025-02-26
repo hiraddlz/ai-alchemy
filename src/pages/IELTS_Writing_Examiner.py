@@ -6,6 +6,7 @@ from redlines import Redlines  # Import Redlines
 from tools.image_utils import ocr
 from tools.llm_utils import generate_text, json_output
 
+
 def ielts_examiner(ielts_writing, max_attempts=3):
     system_prompt = """You are an expert IELTS writing examiner. You assess the given essay and provide feedback, identify mistakes, and suggest corrections.
                 Your output must be a JSON following this structure:
@@ -28,11 +29,12 @@ ielts_writing:\n
             # If this is the last attempt, return None
             if attempt == max_attempts - 1:
                 return None
-            
+
+
 def show_ielts_result(result):
     st.success(f"🎉 Score: {result['band']} / 9")
     st.subheader("📝 Feedback:")
-    st.write(result['feedback'])
+    st.write(result["feedback"])
     st.subheader("⚠️ Mistakes and Corrections:")
     for i, mistake in enumerate(result["mistakes"]):
         st.markdown("---")
@@ -40,9 +42,9 @@ def show_ielts_result(result):
         st.write(f"**Correction {i+1}:** {mistake['correction']}")
         # Generate and display the diff
         with st.expander(f"## 🔍 See Changes Highlighted (Mistake {i+1})"):
-            diff = Redlines(mistake['mistake'], mistake['correction'])
+            diff = Redlines(mistake["mistake"], mistake["correction"])
             st.markdown(diff.output_markdown, unsafe_allow_html=True)
-            
+
 
 def main():
     """IELTS Writing Examiner App."""
@@ -51,7 +53,9 @@ def main():
     st.write("✨ Get AI-powered feedback on your IELTS writing. ✨")
 
     with st.form("ielts_examiner_form"):
-        input_text = st.text_area("✍️ Paste your IELTS writing here to evaluate:", height=250)
+        input_text = st.text_area(
+            "✍️ Paste your IELTS writing here to evaluate:", height=250
+        )
         uploaded_image = st.file_uploader(
             "📷 Or upload an image of your writing:", type=["png", "jpg", "jpeg"]
         )
@@ -59,7 +63,9 @@ def main():
 
         if submitted:
             if uploaded_image:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".png"
+                ) as temp_file:
                     temp_file.write(uploaded_image.read())
                     image_path = temp_file.name
                 input_text = ocr(image_path)
@@ -71,7 +77,7 @@ def main():
                 return
 
             with st.spinner("🔄 Evaluating..."):
-                
+
                 try:
                     result = ielts_examiner(input_text)
                     show_ielts_result(result)
@@ -80,5 +86,5 @@ def main():
                     st.error("An error occurred during evaluation. Please try again.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
