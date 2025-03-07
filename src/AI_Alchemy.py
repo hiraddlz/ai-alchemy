@@ -36,7 +36,7 @@ PAGE_CONFIG = {
             "name": "YouTube Summarizer & Chat",
             "emoji": "🎬",
             "hover": "Summarize videos and chat with the transcript.",
-            "filename": "YouTube_Summarizer_Chat.py",
+            "filename": "Youtube_Summarizer_Chat.py",
         },
     ],
     "Conversion Tools": [
