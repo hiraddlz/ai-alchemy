@@ -14,16 +14,17 @@ def extract_video_id(url: str) -> str:
     """Extracts the YouTube video ID from a URL."""
     parsed_url = urlparse(url)
 
-    if parsed_url.hostname in ["www.youtube.com", "youtube.com"]:
+    if parsed_url.hostname in [
+        "www.youtube.com",
+        "youtube.com",
+        "youtu.be",
+        "m.youtube.com",
+    ]:
+        # Handle regular YouTube links
         query_params = parse_qs(parsed_url.query)
         video_id = query_params.get("v")
         if video_id:
             return video_id[0]
-    elif parsed_url.hostname == "youtu.be":
-        # Handle youtu.be short links
-        video_id = parsed_url.path.lstrip("/")
-        if video_id:
-            return video_id
 
     return None
 
