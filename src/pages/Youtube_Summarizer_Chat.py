@@ -192,7 +192,7 @@ def run():
         # Buttons for chat management
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Clear Chat"):
+            if st.button("Clear Chat", use_container_width=True):
                 # Reset chat but keep the system message with transcript
                 system_message = (
                     st.session_state.messages[0] if st.session_state.messages else None
@@ -201,7 +201,7 @@ def run():
                 st.rerun()
 
         with col2:
-            if st.button("Start New Video"):
+            if st.button("Start New Video", use_container_width=True):
                 # Reset everything
                 st.session_state.transcript = None
                 st.session_state.messages = []

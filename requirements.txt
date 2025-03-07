@@ -11,3 +11,4 @@ pypdfium2
 docx2txt
 onnxruntime
 pyperclip
+youtube-transcript-api
