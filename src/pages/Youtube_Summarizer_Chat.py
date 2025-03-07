@@ -152,15 +152,18 @@ def run():
 
         # Initialize chat history with system message if empty
         if not st.session_state.messages:
-            system_prompt = (
-                f"You are a helpful assistant analyzing the following YouTube video transcript:\n\n"
-                f"<transcript>\n{transcript}\n</transcript>\n\n"
-                f"Please answer questions based only on the information provided in this transcript."
-            )
-            st.session_state.messages = [{"role": "system", "content": system_prompt}]
+            system_prompt = f"You are a helpful assistant analyzing the following YouTube video transcript:\n\n"
+            st.session_state.messages = [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": f"<transcript>\n{transcript}\n</transcript>\n\nPlease answer questions based only on the information provided in this transcript.",
+                },
+                {"role": "assistant", "content": "Ask me anything about the video."},
+            ]
 
         # Display chat history
-        for message in st.session_state.messages:
+        for message in st.session_state.messages[4:]:
             if message["role"] != "system":  # Don't display the system message
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
