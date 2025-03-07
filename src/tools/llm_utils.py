@@ -6,8 +6,12 @@ from g4f.client import Client
 
 client = Client()
 
+
 def generate_text(
-    system_prompt: str, user_prompt: str = None, model: str = "gpt-4", stream: bool = False
+    system_prompt: str,
+    user_prompt: str = None,
+    model: str = "gpt-4",
+    stream: bool = False,
 ) -> Union[str, Generator]:
     """
     Generate text using g4f API.
@@ -40,8 +44,10 @@ def generate_text(
             # Return a generator that yields the error for streaming cases
             def error_gen():
                 yield error_msg
+
             return error_gen()
         return error_msg
+
 
 def stream_content(response: Generator) -> Generator:
     """
@@ -57,6 +63,7 @@ def stream_content(response: Generator) -> Generator:
         delta = chunk.choices[0].delta.content
         if delta is not None:  # Handle None values
             yield delta
+
 
 def json_output(response: str, default: dict = None) -> dict:
     """
@@ -93,6 +100,7 @@ def json_output(response: str, default: dict = None) -> dict:
         except json.JSONDecodeError as e:
             print(f"JSON parsing failed: {e}, Response: {cleaned}")
             return default if default is not None else {}
+
 
 def remove_triple_backticks(text: str) -> str:
     """
