@@ -27,22 +27,16 @@ PAGE_CONFIG = {
     ],
     "Writing Tools": [
         {
-            "name": "Summarizer",
-            "emoji": "📝",
-            "hover": "Condense long texts into key points",
-            "filename": "Summarizer.py",
-        },
-        {
             "name": "Content Repurposer",
             "emoji": "♻️",
             "hover": "Adapt content for different formats/platforms",
             "filename": "Content_Repurposer.py",
         },
         {
-            "name": "Proofreader",
-            "emoji": "🔍",
-            "hover": "Advanced grammar and style checking",
-            "filename": "Proofreader.py",
+            "name": "YouTube Summarizer & Chat",
+            "emoji": "🎬",
+            "hover": "Summarize videos and chat with the transcript.",
+            "filename": "YouTube_Summarizer_Chat.py",
         },
     ],
     "Conversion Tools": [
@@ -71,7 +65,19 @@ PAGE_CONFIG = {
             "emoji": "🌐",
             "hover": "Multi-language translation with context preservation",
             "filename": "Translator.py",
-        }
+        },
+        {
+            "name": "Proofreader",
+            "emoji": "🔍",
+            "hover": "Advanced grammar and style checking",
+            "filename": "Proofreader.py",
+        },
+        {
+            "name": "Summarizer",
+            "emoji": "📝",
+            "hover": "Condense long texts into key points",
+            "filename": "Summarizer.py",
+        },
     ],
     "Analysis Tools": [
         {
