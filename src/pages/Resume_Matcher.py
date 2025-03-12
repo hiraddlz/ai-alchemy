@@ -244,6 +244,7 @@ if st.button("Run Selected Options", use_container_width=True):
                 data=st.session_state.job_description,
                 file_name=f"job_description-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
                 mime="text/plain",
+                on_click="ignore",
             )
 
         if run_cover_letter:
@@ -266,6 +267,7 @@ if st.button("Run Selected Options", use_container_width=True):
                         data=st.session_state.cover_letter,
                         file_name=f"cover_letter-{st.session_state.job_info['company_name']}-{st.session_state.job_info['job_title']}-{st.session_state.job_info['job_location']}.txt",
                         mime="text/plain",
+                        on_click="ignore",
                     )
 
         if run_interview:
@@ -290,4 +292,5 @@ if st.button("Run Selected Options", use_container_width=True):
                         data=st.session_state.interview_questions,
                         file_name="interview_questions.txt",
                         mime="text/plain",
+                        on_click="ignore",
                     )

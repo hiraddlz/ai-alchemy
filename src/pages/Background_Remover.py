@@ -45,5 +45,6 @@ if uploaded_file is not None:
             label="💾 Download Processed Image",
             data=byte_im,
             file_name="no_bg.png",
+            on_click="ignore",
             mime="image/png",
         )

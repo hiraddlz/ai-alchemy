@@ -102,6 +102,7 @@ if uploaded_file is not None:
         label="Save as Text File 💾",
         data=ascii_result.encode("utf-8"),
         file_name="ascii_art.txt",
+        on_click="ignore",
         mime="text/plain",
     ):
         st.success("File Downloaded! ⬇️")
