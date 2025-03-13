@@ -1,7 +1,5 @@
 import streamlit as st
-from g4f.client import Client
-from tools.llm_utils import stream_content
-
+from tools.llm_utils import LLMClient
 
 st.set_page_config(page_title="AI Alchemy", layout="wide")
 
@@ -11,8 +9,8 @@ with open("assets/css/styles.css") as f:
 
 st.title("💬 Chatbot")
 
-client = Client()
-
+# Initialize the LLM client
+llm_client = LLMClient()
 
 # Set a default model
 if "openai_model" not in st.session_state:
@@ -36,7 +34,7 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(prompt)
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        stream = client.chat.completions.create(
+        stream = llm_client.client.chat.completions.create(
             model=st.session_state["openai_model"],
             messages=[
                 {"role": m["role"], "content": m["content"]}
@@ -44,5 +42,5 @@ if prompt := st.chat_input("What is up?"):
             ],
             stream=True,
         )
-        response = st.write_stream(stream_content(stream))
+        response = st.write_stream(llm_client.stream_content(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})

@@ -1,10 +1,10 @@
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
-from tools.llm_utils import generate_text, stream_content
-from g4f.client import Client
+from tools.llm_utils import LLMClient
 
-client = Client()
+# Initialize the LLM client
+llm_client = LLMClient()
 
 # Define the display name of the tool
 TOOL_NAME = "YouTube Video Summarizer & Chat 🎬"
@@ -46,8 +46,8 @@ def summarize_transcript(transcript: str) -> str:
     user_prompt = f"Summarize the following YouTube video transcript into a concise summary:\n\n{transcript}"
     try:
         # Create a streaming response using the client
-        stream = client.chat.completions.create(
-            model="gpt-4",
+        stream = llm_client.client.chat.completions.create(
+            model=llm_client.model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -140,7 +140,7 @@ def run():
                 if not st.session_state.summary:
                     summary_stream = summarize_transcript(transcript)
                     st.session_state.summary = st.write_stream(
-                        stream_content(summary_stream)
+                        llm_client.stream_content(summary_stream)
                     )
                 else:
                     st.write(st.session_state.summary)
@@ -183,12 +183,12 @@ def run():
             # Generate response
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
-                    stream = client.chat.completions.create(
-                        model="gpt-4",
+                    stream = llm_client.client.chat.completions.create(
+                        model=llm_client.model,
                         messages=st.session_state.messages,
                         stream=True,
                     )
-                    response = st.write_stream(stream_content(stream))
+                    response = st.write_stream(llm_client.stream_content(stream))
 
             # Add assistant message to history
             st.session_state.messages.append({"role": "assistant", "content": response})

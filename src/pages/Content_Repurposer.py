@@ -1,5 +1,8 @@
 import streamlit as st
-from tools.llm_utils import generate_text, stream_content
+from tools.llm_utils import LLMClient
+
+# Initialize the LLM client
+llm_client = LLMClient()
 
 
 def main():
@@ -37,8 +40,8 @@ def main():
                 {input_text}
                 ```"""
                 output = st.write_stream(
-                    stream_content(
-                        generate_text(system_prompt, user_prompt, stream=True)
+                    llm_client.stream_content(
+                        llm_client.generate_text(system_prompt, user_prompt, stream=True)
                     )
                 )
                 st.session_state.output = output  # Store in session state

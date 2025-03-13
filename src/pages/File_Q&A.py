@@ -1,8 +1,8 @@
 import streamlit as st
-from g4f.client import Client
-from tools.llm_utils import stream_content
+from tools.llm_utils import LLMClient
 
-client = Client()
+# Initialize the LLM client
+llm_client = LLMClient()
 
 st.title("📝 File Q&A")
 
@@ -40,15 +40,15 @@ if question and uploaded_file:
     st.session_state.messages.append(user_message)
 
     # Generate response
-    stream = client.chat.completions.create(
-        model="gpt-4",
+    stream = llm_client.client.chat.completions.create(
+        model=llm_client.model,
         messages=st.session_state.messages,
         stream=True,
     )
 
     # Display answer
     st.write("### Answer")
-    response = st.write_stream(stream_content(stream))
+    response = st.write_stream(llm_client.stream_content(stream))
 
     # Add assistant message
     assistant_message = {"role": "assistant", "content": response}

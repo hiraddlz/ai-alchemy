@@ -1,7 +1,9 @@
 import streamlit as st
 from redlines import Redlines
+from tools.llm_utils import LLMClient
 
-from tools.llm_utils import generate_text, remove_triple_backticks, stream_content
+# Initialize the LLM client
+llm_client = LLMClient()
 
 
 def proofreader():
@@ -28,11 +30,11 @@ def proofreader():
                 # Stream the corrected text
                 st.markdown("### ✨ Corrected Text:")
                 corrected_text = st.write_stream(
-                    stream_content(
-                        generate_text(system_prompt, user_prompt, stream=True)
+                    llm_client.stream_content(
+                        llm_client.generate_text(system_prompt, user_prompt, stream=True)
                     )
                 )
-                corrected_text = remove_triple_backticks(corrected_text)
+                corrected_text = llm_client.remove_triple_backticks(corrected_text)
 
                 # Generate and display the diff
                 with st.expander("## 🔍 See Changes Highlighted"):

@@ -4,7 +4,10 @@ import streamlit as st
 from redlines import Redlines  # Import Redlines
 
 from tools.image_utils import ocr
-from tools.llm_utils import generate_text, json_output
+from tools.llm_utils import LLMClient
+
+# Initialize the LLM client
+llm_client = LLMClient()
 
 
 def ielts_examiner(ielts_writing, max_attempts=3):
@@ -24,7 +27,7 @@ ielts_writing:\n
 """
     for attempt in range(max_attempts):
         try:
-            return json_output(generate_text(system_prompt, user_prompt))
+            return llm_client.json_output(llm_client.generate_text(system_prompt, user_prompt))
         except Exception as e:
             # If this is the last attempt, return None
             if attempt == max_attempts - 1:

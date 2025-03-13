@@ -1,12 +1,13 @@
-from g4f.client import Client
 from PIL import Image
+from tools.llm_utils import LLMClient
 
-client = Client()
+# Initialize the LLM client
+llm_client = LLMClient()
 
 
 def generate_image(prompt: str) -> str:
     try:
-        response = client.images.generate(
+        response = llm_client.client.images.generate(
             prompt=prompt,
             # n=1,
             # size="512x512"  # You can adjust the size as needed (e.g., "1024x1024")
