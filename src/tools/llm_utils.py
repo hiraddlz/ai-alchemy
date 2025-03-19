@@ -10,7 +10,7 @@ class Message:
     content: str
 
 class LLMClient:
-    def __init__(self, model: str = "gpt-4"):
+    def __init__(self, model: str = "gpt-4o-mini"):
         self.client = Client()
         self.model = model
 
