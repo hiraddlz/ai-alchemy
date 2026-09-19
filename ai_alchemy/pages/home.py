@@ -23,7 +23,13 @@ def render() -> None:
     )
 
     settings = load_settings()
-    if settings.is_configured:
+    if settings.is_shared:
+        st.success(
+            "**No setup needed** - a free shared model is preloaded, just pick a tool. "
+            "Want a stronger model or no demo limits? Paste your own key in **⚙️ Model settings**.",
+            icon="🎁",
+        )
+    elif settings.is_configured:
         st.success(
             f"Ready - using **{settings.provider.name}** with `{settings.model}`. Pick a tool below.",
             icon="✅",

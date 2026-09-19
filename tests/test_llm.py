@@ -17,22 +17,57 @@ def test_resolve_settings_defaults_to_openai_when_empty():
     assert not settings.is_configured
 
 
-def test_resolve_settings_priority_session_over_secrets_over_env():
+def test_visitor_key_beats_host_key_and_unlocks_model_choice():
     settings = resolve_settings(
-        overrides={"LLM_MODEL": "from-session"},
-        secrets={"LLM_MODEL": "from-secrets", "LLM_API_KEY": "secret-key"},
-        env={"LLM_MODEL": "from-env", "LLM_API_KEY": "env-key", "LLM_PROVIDER": "groq"},
+        overrides={"LLM_API_KEY": "visitor-key", "LLM_MODEL": "from-session"},
+        secrets={"LLM_PROVIDER": "groq", "LLM_API_KEY": "host-key", "LLM_MODEL": "host-model"},
+        env={"LLM_API_KEY": "env-key"},
     )
-    assert settings.model == "from-session"
-    assert settings.api_key == "secret-key"
     assert settings.provider is PROVIDERS["groq"]
-    assert settings.base_url == PROVIDERS["groq"].base_url
-    assert settings.is_configured
+    assert settings.api_key == "visitor-key"
+    assert settings.key_source == "session"
+    assert settings.model == "from-session"
+    assert not settings.is_shared
+
+
+def test_host_key_gives_shared_mode_with_locked_model():
+    settings = resolve_settings(
+        overrides={"LLM_MODEL": "gpt-4o"},  # a visitor trying to switch models
+        secrets={"LLM_PROVIDER": "gemini", "LLM_API_KEY": "host-key", "DEMO_SESSION_LIMIT": "5"},
+        env={},
+    )
+    assert settings.is_shared
+    assert settings.key_source == "host"
+    assert settings.model == PROVIDERS["gemini"].default_model
+    assert settings.base_url == PROVIDERS["gemini"].base_url
+    assert settings.demo_limit("DEMO_SESSION_LIMIT") == 5
+    assert settings.demo_limit("DEMO_RPM") == 12  # default
+
+
+def test_host_key_is_not_used_for_a_different_provider():
+    settings = resolve_settings(
+        overrides={"LLM_PROVIDER": "openai"},
+        secrets={"LLM_PROVIDER": "gemini", "LLM_API_KEY": "host-key"},
+        env={},
+    )
+    assert settings.api_key == ""
+    assert settings.key_source == "none"
+    assert not settings.is_configured
+
+
+def test_secrets_beat_env_for_host_settings():
+    settings = resolve_settings(
+        secrets={"LLM_MODEL": "from-secrets", "LLM_API_KEY": "secret-key"},
+        env={"LLM_MODEL": "from-env", "LLM_API_KEY": "env-key"},
+    )
+    assert settings.model == "from-secrets"
+    assert settings.api_key == "secret-key"
 
 
 def test_resolve_settings_blank_override_falls_through():
     settings = resolve_settings(overrides={"LLM_API_KEY": "   "}, env={"OPENAI_API_KEY": "sk-env"})
     assert settings.api_key == "sk-env"
+    assert settings.is_shared
 
 
 def test_ollama_needs_no_key_and_custom_needs_base_url():
@@ -150,3 +185,26 @@ def test_connection_error_is_friendly():
     )
     with pytest.raises(LLMError, match="Could not reach"):
         LLMClient(settings, max_retries=0).ping()
+
+
+def test_before_request_hook_can_block_calls(fake_server):
+    calls: list[int] = []
+
+    def hook(messages):
+        calls.append(len(messages))
+        if len(calls) > 1:
+            raise LLMError("blocked")
+
+    settings = resolve_settings(
+        env={
+            "LLM_PROVIDER": "custom",
+            "LLM_BASE_URL": fake_server.base_url,
+            "LLM_MODEL": "fake-model",
+            "LLM_API_KEY": "k",
+        }
+    )
+    client = LLMClient(settings, before_request=hook)
+    assert client.complete("s", "u") == "pong"
+    with pytest.raises(LLMError, match="blocked"):
+        list(client.complete_stream("s", "u"))
+    assert len(fake_server.requests) == 1  # second call never reached the server

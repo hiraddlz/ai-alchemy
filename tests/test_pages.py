@@ -168,3 +168,41 @@ def test_error_from_model_is_shown_not_raised(fake_server):
     click(at, "Summarise")
     assert not at.exception
     assert at.error and "rate limit" in at.error[0].value.lower()
+
+
+def test_shared_mode_enforces_session_limit(fake_server):
+    fake_server.reply = "Fixed text."
+    at = page_app("proofreader")
+    at.secrets["LLM_PROVIDER"] = "custom"
+    at.secrets["LLM_BASE_URL"] = fake_server.base_url
+    at.secrets["LLM_MODEL"] = "fake"
+    at.secrets["LLM_API_KEY"] = "host-key"
+    at.secrets["DEMO_SESSION_LIMIT"] = "2"
+    at.secrets["DEMO_RPM"] = "1000"
+    at.run()
+    at.text_area("pf_text").set_value("Some text.").run()
+    at.toggle[0].set_value(False).run()  # one model call per click
+
+    click(at, "Proofread")
+    click(at, "Proofread")
+    assert not at.error
+    assert len(fake_server.requests) == 2
+
+    click(at, "Proofread")
+    assert len(fake_server.requests) == 2  # blocked before reaching the server
+    assert at.error and "free demo calls" in at.error[0].value
+    assert at.session_state["demo_calls"] == 2
+
+
+def test_shared_mode_rejects_oversized_prompts(fake_server):
+    at = page_app("summarizer")
+    at.secrets["LLM_PROVIDER"] = "custom"
+    at.secrets["LLM_BASE_URL"] = fake_server.base_url
+    at.secrets["LLM_MODEL"] = "fake"
+    at.secrets["LLM_API_KEY"] = "host-key"
+    at.secrets["DEMO_MAX_WORDS"] = "50"
+    at.run()
+    at.text_area("sum_text").set_value("word " * 80).run()
+    click(at, "Summarise")
+    assert at.error and "up to 50 words" in at.error[0].value
+    assert not fake_server.requests

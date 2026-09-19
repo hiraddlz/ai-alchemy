@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
 from openai import (
@@ -94,8 +94,17 @@ class LLMClient:
     (OpenAI, Groq, OpenRouter, Gemini, Ollama, vLLM, LM Studio...).
     """
 
-    def __init__(self, settings: LLMSettings, **client_kwargs: Any):
+    def __init__(
+        self,
+        settings: LLMSettings,
+        *,
+        before_request: Callable[[list[Message]], None] | None = None,
+        **client_kwargs: Any,
+    ):
+        """``before_request`` runs before every API call and may raise :class:`LLMError`
+        (used for shared-mode usage caps)."""
         self.settings = settings
+        self._before_request = before_request
         options: dict[str, Any] = {
             "api_key": settings.api_key or "not-needed",
             "base_url": settings.base_url,
@@ -128,6 +137,8 @@ class LLMClient:
             kwargs["max_tokens"] = max_tokens
         if json_mode and self.settings.provider.supports_json_mode:
             kwargs["response_format"] = {"type": "json_object"}
+        if self._before_request:
+            self._before_request(messages)
         try:
             response = self._client.chat.completions.create(**kwargs)
         except Exception as exc:  # noqa: BLE001 - converted to a user-facing error
@@ -139,6 +150,8 @@ class LLMClient:
 
     def stream(self, messages: list[Message], *, temperature: float | None = None) -> Iterator[str]:
         """Yield the assistant reply incrementally."""
+        if self._before_request:
+            self._before_request(messages)
         try:
             response = self._client.chat.completions.create(
                 model=self.model,

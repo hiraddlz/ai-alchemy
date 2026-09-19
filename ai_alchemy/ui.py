@@ -9,6 +9,7 @@ import streamlit as st
 
 from ai_alchemy.config import PROVIDERS, LLMSettings, load_settings
 from ai_alchemy.llm import LLMClient, LLMError
+from ai_alchemy.quota import demo_guard
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 REPO_URL = "https://github.com/hiraddlz/ai-alchemy"
@@ -32,7 +33,13 @@ def render_settings_sidebar() -> LLMSettings:
     provider_keys = list(PROVIDERS)
 
     with st.sidebar:
-        with st.expander("⚙️ Model settings", expanded=not settings.is_configured):
+        title = "⚙️ Model settings" + (" (optional)" if settings.is_shared else "")
+        with st.expander(title, expanded=not settings.is_configured):
+            if settings.is_shared:
+                st.caption(
+                    "A free shared model is preloaded. Paste your own key to pick any model "
+                    "and remove the demo limits."
+                )
             provider_key = st.selectbox(
                 "Provider",
                 provider_keys,
@@ -61,11 +68,15 @@ def render_settings_sidebar() -> LLMSettings:
                     if settings.provider.key == provider_key
                     else provider.default_model
                 )
+            settings = load_settings()
             st.text_input(
                 "Model",
                 key="LLM_MODEL",
+                disabled=settings.is_shared,
                 help=(
-                    "Suggestions: " + ", ".join(provider.suggested_models)
+                    "Locked while using the shared key - paste your own key to change it."
+                    if settings.is_shared
+                    else "Suggestions: " + ", ".join(provider.suggested_models)
                     if provider.suggested_models
                     else "Any chat model served by your endpoint."
                 ),
@@ -83,8 +94,14 @@ def render_settings_sidebar() -> LLMSettings:
                 except LLMError as exc:
                     st.error(str(exc))
 
-        if settings.is_configured:
-            st.caption(f"🟢 {settings.provider.name} · `{settings.model}`")
+        if settings.is_shared:
+            used = int(st.session_state.get("demo_calls", 0))
+            limit = settings.demo_limit("DEMO_SESSION_LIMIT")
+            st.caption(
+                f"🟢 Free shared model · `{settings.model}` · {used}/{limit} demo calls used"
+            )
+        elif settings.is_configured:
+            st.caption(f"🟢 {settings.provider.name} · `{settings.model}` · your key")
         else:
             st.caption("🔴 Not configured - add a key above")
         st.caption(
@@ -104,6 +121,8 @@ def require_client() -> LLMClient:
             icon="🔑",
         )
         st.stop()
+    if settings.is_shared:
+        return LLMClient(settings, before_request=demo_guard(settings))
     return LLMClient(settings)
 
 

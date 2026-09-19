@@ -33,6 +33,9 @@ Highlights:
 - **Streaming everywhere.** Long outputs render token by token.
 - **Tested.** Pure helpers are unit-tested; every page is exercised end-to-end with Streamlit's
   `AppTest` against a fake OpenAI-compatible server (no network, no keys).
+- **Zero-setup for visitors.** Deploy with one free-tier key and every visitor gets a working app;
+  the key is protected by per-session, per-minute and prompt-size caps, and the model is locked so
+  nobody can point your key at a pricier one. Visitors can paste their own key to lift the caps.
 - **Deployable in one command** - Streamlit Cloud, Docker, or `streamlit run app.py`.
 
 ## Tools
@@ -67,21 +70,41 @@ pip install -e ".[images]"        # drop [images] to skip the background remover
 streamlit run app.py
 ```
 
-Open http://localhost:8501, expand **⚙️ Model settings** in the sidebar, choose a provider and paste
-a key. Free tiers exist for [Groq](https://console.groq.com/keys),
-[OpenRouter](https://openrouter.ai/keys) and [Google AI Studio](https://aistudio.google.com/apikey);
-[Ollama](https://ollama.com) needs no key at all.
+Open http://localhost:8501. Either paste a key into **⚙️ Model settings** in the sidebar, or
+pre-configure one so the app works out of the box (see below).
 
-To pre-configure a key instead of typing it each session, copy
-[`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example) to `.streamlit/secrets.toml`
-or set environment variables:
+### Free, zero-setup mode (recommended for a public demo)
+
+Put **one free-tier key** in `.streamlit/secrets.toml` (locally) or in your Streamlit Cloud app's
+*Secrets* box, based on [`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example):
+
+```toml
+LLM_PROVIDER = "gemini"          # free tier: 1500 req/day, 1M tokens/min, vision
+LLM_API_KEY  = "AIza..."         # https://aistudio.google.com/apikey
+LLM_MODEL    = "gemini-2.0-flash"
+```
+
+Visitors then land on a working app with no setup. The app runs in **shared mode**:
+
+| Guard | Default | Purpose |
+| --- | --- | --- |
+| `DEMO_SESSION_LIMIT` | 25 calls | one visitor cannot drain the daily quota |
+| `DEMO_RPM` | 12 / min | stays under the provider's rate limit across all visitors |
+| `DEMO_MAX_WORDS` | 15,000 | keeps huge documents off the shared key |
+| model lock | - | the host key only ever runs `LLM_MODEL` |
+
+Anyone who wants a stronger model or no caps pastes their own key in the sidebar; it lives only in
+their browser session. Groq, OpenRouter and Gemini all have free tiers; Ollama needs no key.
+
+All settings, as secrets or environment variables:
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `LLM_PROVIDER` | `openai`, `groq`, `openrouter`, `gemini`, `ollama`, `custom` | `openai` |
+| `LLM_PROVIDER` | `openai`, `gemini`, `groq`, `openrouter`, `ollama`, `custom` | `openai` |
 | `LLM_API_KEY` | API key (`OPENAI_API_KEY` is also honoured for OpenAI) | - |
 | `LLM_MODEL` | Model name | provider default |
 | `LLM_BASE_URL` | Endpoint URL, only needed for `custom` | provider preset |
+| `DEMO_SESSION_LIMIT` / `DEMO_RPM` / `DEMO_MAX_WORDS` | Shared-mode caps | 25 / 12 / 15000 |
 
 ### Docker
 
@@ -93,15 +116,17 @@ docker run -p 8501:8501 -e LLM_PROVIDER=groq -e LLM_API_KEY=gsk_... ai-alchemy
 ### Streamlit Community Cloud
 
 Point a new app at `app.py`, paste the contents of `secrets.toml.example` (with your key) into the
-app's *Secrets* box, and deploy. `requirements.txt` is kept in sync with `pyproject.toml` for this.
+app's *Secrets* box, and deploy - visitors get the zero-setup experience described above.
+`requirements.txt` is kept in sync with `pyproject.toml` for this.
 
 ## Architecture
 
 ```
 app.py                     entry point: page config, st.navigation, sidebar settings
 ai_alchemy/
-├── config.py              provider presets + settings resolution (session > secrets > env)
+├── config.py              provider presets + settings resolution (visitor key > host key)
 ├── llm.py                 LLMClient: chat / stream / JSON / vision on the OpenAI-compatible API
+├── quota.py               shared-mode guards: session budget, sliding-window RPM, prompt size
 ├── registry.py            single list of tools that drives navigation and the home page
 ├── ui.py                  shared widgets: settings sidebar, require_client(), streaming helpers
 ├── tools/                 pure, framework-free helpers (unit tested)
@@ -114,6 +139,7 @@ tests/
 ├── conftest.py            FakeOpenAIServer: canned JSON + SSE streaming replies
 ├── test_tools.py          unit tests for helpers
 ├── test_llm.py            settings resolution, JSON parsing, client error mapping
+├── test_quota.py          rate limiter and prompt sizing
 └── test_pages.py          AppTest end-to-end runs of every page
 ```
 
@@ -123,6 +149,8 @@ Design notes:
   Provider quirks (e.g. no JSON mode on Ollama) live in a preset table, not in the tools.
 - **Structured output is defensive.** `complete_json()` asks for JSON mode where supported, strips
   code fences, trims prose, repairs trailing commas and retries once before surfacing an error.
+- **Shared mode is opt-in by deployment.** A key in secrets makes the app free for visitors; the
+  guards in `quota.py` are a `before_request` hook on the client, so tools never know about them.
 - **Errors are user-facing.** SDK exceptions are mapped to plain-language messages ("rejected the
   API key", "model not found", "rate limit") and rendered inline instead of crashing the page.
 - **Pages are thin.** Prompts and layout live in the page; anything testable without Streamlit lives
@@ -133,7 +161,7 @@ Design notes:
 ```bash
 pip install -e ".[dev,images]"
 pre-commit install          # ruff lint + format on commit
-pytest                      # ~60 tests, no network required
+pytest                      # ~70 tests, no network required
 ruff check . && ruff format --check .
 ```
 
