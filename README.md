@@ -2,7 +2,7 @@
 
 <img src="assets/logo.svg" alt="AI Alchemy" width="260">
 
-**Twelve AI-powered tools in one Streamlit app - bring any LLM provider.**
+**Twelve AI-powered tools in one Streamlit app. Works out of the box on free models - or bring any LLM provider.**
 
 [![CI](https://github.com/hiraddlz/ai-alchemy/actions/workflows/ci.yml/badge.svg)](https://github.com/hiraddlz/ai-alchemy/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
@@ -20,11 +20,16 @@
 
 AI Alchemy is a single, self-hostable web app that packages everyday LLM workflows - proofreading,
 summarising, document Q&A, resume tailoring, IELTS grading, translation, equation OCR - behind a
-clean UI. It is **provider-agnostic**: every tool talks to the model through the OpenAI-compatible
-chat API, so you can run it on OpenAI, Groq, OpenRouter, Google Gemini, a local Ollama server or any
-compatible endpoint by changing a dropdown. Keys live only in your browser session.
+clean UI. It **works with no API key** - out of the box it routes to free public models
+(DeepSeek, GLM, Qwen, Nemotron, ...) - and it is **provider-agnostic**: switch a dropdown to run the
+same tools on OpenAI, Google Gemini, Groq, DeepSeek, Hugging Face, OpenRouter, a local Ollama server
+or any OpenAI-compatible endpoint. Keys live only in your browser session.
 
 Highlights:
+
+- **Free by default.** A keyless backend (via [g4f](https://github.com/xtekky/gpt4free)) with a
+  curated fallback chain of endpoints that work right now, incl. a vision model. Best-effort by
+  nature - so every screen also lets you drop in your own key for guaranteed quality.
 
 - **Structured outputs, not just chat.** Grading and matching tools request JSON, validate it, and
   render it as metrics, badges, tables and word-level diffs.
@@ -33,9 +38,9 @@ Highlights:
 - **Streaming everywhere.** Long outputs render token by token.
 - **Tested.** Pure helpers are unit-tested; every page is exercised end-to-end with Streamlit's
   `AppTest` against a fake OpenAI-compatible server (no network, no keys).
-- **Zero-setup for visitors.** Deploy with one free-tier key and every visitor gets a working app;
-  the key is protected by per-session, per-minute and prompt-size caps, and the model is locked so
-  nobody can point your key at a pricier one. Visitors can paste their own key to lift the caps.
+- **Shared-key mode.** Prefer a reliable provider for visitors? Deploy with one free-tier key and
+  the app locks the model and enforces per-session, per-minute and prompt-size caps so nobody can
+  drain it.
 - **Deployable in one command** - Streamlit Cloud, Docker, or `streamlit run app.py`.
 
 ## Tools
@@ -70,13 +75,28 @@ pip install -e ".[images]"        # drop [images] to skip the background remover
 streamlit run app.py
 ```
 
-Open http://localhost:8501. Either paste a key into **⚙️ Model settings** in the sidebar, or
-pre-configure one so the app works out of the box (see below).
+Open http://localhost:8501 - that's it. With nothing configured the app starts on the
+**Free (no key needed)** provider. Pick a tool and go.
 
-### Free, zero-setup mode (recommended for a public demo)
+### Model providers
 
-Put **one free-tier key** in `.streamlit/secrets.toml` (locally) or in your Streamlit Cloud app's
-*Secrets* box, based on [`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example):
+| Provider | Key | Notes |
+| --- | --- | --- |
+| **Free (no key needed)** - default | none | Public endpoints via g4f: DeepSeek V4 Flash, GLM 5.2, Qwen 3.8, Nemotron 3 Ultra, Ling (vision), or *Auto*. Best-effort speed/availability; falls back across endpoints automatically. |
+| Google Gemini | free tier | 1500 req/day, 1M tokens/min, vision - recommended as a shared host key |
+| Groq | free tier | very fast; ~6k tokens/min |
+| OpenRouter | free tier | `:free` models |
+| OpenAI, DeepSeek, Hugging Face | paid / token | full model catalogues |
+| Ollama | none | anything you run locally |
+| Custom | as needed | any OpenAI-compatible URL (vLLM, LM Studio, ...) |
+
+Change provider in **⚙️ Model settings** in the sidebar; keys never leave the browser session.
+
+### Shared-key mode (optional, for a public deployment)
+
+If you would rather your visitors use a specific provider than the public endpoints, put **one
+free-tier key** in `.streamlit/secrets.toml` (locally) or in your Streamlit Cloud app's *Secrets*
+box, based on [`.streamlit/secrets.toml.example`](.streamlit/secrets.toml.example):
 
 ```toml
 LLM_PROVIDER = "gemini"          # free tier: 1500 req/day, 1M tokens/min, vision
@@ -84,7 +104,7 @@ LLM_API_KEY  = "AIza..."         # https://aistudio.google.com/apikey
 LLM_MODEL    = "gemini-2.0-flash"
 ```
 
-Visitors then land on a working app with no setup. The app runs in **shared mode**:
+The app then runs on that key for everyone, with guards:
 
 | Guard | Default | Purpose |
 | --- | --- | --- |
@@ -93,14 +113,13 @@ Visitors then land on a working app with no setup. The app runs in **shared mode
 | `DEMO_MAX_WORDS` | 15,000 | keeps huge documents off the shared key |
 | model lock | - | the host key only ever runs `LLM_MODEL` |
 
-Anyone who wants a stronger model or no caps pastes their own key in the sidebar; it lives only in
-their browser session. Groq, OpenRouter and Gemini all have free tiers; Ollama needs no key.
+Anyone can still paste their own key in the sidebar to lift the caps or switch provider.
 
 All settings, as secrets or environment variables:
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `LLM_PROVIDER` | `openai`, `gemini`, `groq`, `openrouter`, `ollama`, `custom` | `openai` |
+| `LLM_PROVIDER` | `free`, `openai`, `gemini`, `groq`, `openrouter`, `deepseek`, `huggingface`, `ollama`, `custom` | `free` (or `openai` if `g4f` is not installed) |
 | `LLM_API_KEY` | API key (`OPENAI_API_KEY` is also honoured for OpenAI) | - |
 | `LLM_MODEL` | Model name | provider default |
 | `LLM_BASE_URL` | Endpoint URL, only needed for `custom` | provider preset |
@@ -115,9 +134,9 @@ docker run -p 8501:8501 -e LLM_PROVIDER=groq -e LLM_API_KEY=gsk_... ai-alchemy
 
 ### Streamlit Community Cloud
 
-Point a new app at `app.py`, paste the contents of `secrets.toml.example` (with your key) into the
-app's *Secrets* box, and deploy - visitors get the zero-setup experience described above.
-`requirements.txt` is kept in sync with `pyproject.toml` for this.
+Point a new app at `app.py` and deploy - no secrets needed for the free provider. To run visitors
+on a shared key instead, paste the contents of `secrets.toml.example` (with your key) into the app's
+*Secrets* box. `requirements.txt` is kept in sync with `pyproject.toml` for this.
 
 ## Architecture
 
@@ -125,7 +144,8 @@ app's *Secrets* box, and deploy - visitors get the zero-setup experience describ
 app.py                     entry point: page config, st.navigation, sidebar settings
 ai_alchemy/
 ├── config.py              provider presets + settings resolution (visitor key > host key)
-├── llm.py                 LLMClient: chat / stream / JSON / vision on the OpenAI-compatible API
+├── llm.py                 LLMClient: chat / stream / JSON / vision, same API for every backend
+├── free_backend.py        keyless backend: OpenAI-client look-alike over g4f with provider fallback
 ├── quota.py               shared-mode guards: session budget, sliding-window RPM, prompt size
 ├── registry.py            single list of tools that drives navigation and the home page
 ├── ui.py                  shared widgets: settings sidebar, require_client(), streaming helpers
@@ -145,8 +165,12 @@ tests/
 
 Design notes:
 
-- **One client, many providers.** `LLMClient` wraps the official `openai` SDK with a `base_url`.
-  Provider quirks (e.g. no JSON mode on Ollama) live in a preset table, not in the tools.
+- **One client, many providers.** `LLMClient` wraps the official `openai` SDK with a `base_url`;
+  the free provider swaps in a `FreeBackend` that exposes the same `chat.completions.create`
+  surface. Provider quirks (JSON mode, key requirements) live in a preset table, not in the tools.
+- **Free mode is honest about itself.** Public endpoints come and go, so the backend tries a short
+  curated chain (KiloCode → HuggingSpace → Cohere), primes streams before committing to a provider,
+  and turns total failure into a one-line message with a way out (pick another model / add a key).
 - **Structured output is defensive.** `complete_json()` asks for JSON mode where supported, strips
   code fences, trims prose, repairs trailing commas and retries once before surfacing an error.
 - **Shared mode is opt-in by deployment.** A key in secrets makes the app free for visitors; the
@@ -161,7 +185,7 @@ Design notes:
 ```bash
 pip install -e ".[dev,images]"
 pre-commit install          # ruff lint + format on commit
-pytest                      # ~70 tests, no network required
+pytest                      # ~80 tests, no network required
 ruff check . && ruff format --check .
 ```
 

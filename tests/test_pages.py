@@ -21,6 +21,9 @@ def page_app(slug: str, fake_server=None, **session_state) -> AppTest:
         f"importlib.import_module('ai_alchemy.pages.{slug}').render()\n"
     )
     at = AppTest.from_string(script, default_timeout=60)
+    # g4f is installed in the dev environment, so force the keyed default to test the
+    # "unconfigured" experience deterministically and without touching the network.
+    at.session_state["LLM_PROVIDER"] = "openai"
     if fake_server is not None:
         at.session_state["LLM_PROVIDER"] = "custom"
         at.session_state["LLM_BASE_URL"] = fake_server.base_url
@@ -38,7 +41,9 @@ def click(at: AppTest, label: str) -> AppTest:
 
 
 def test_main_app_renders_home_without_errors():
-    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=60).run()
+    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=60)
+    at.session_state["LLM_PROVIDER"] = "openai"
+    at.run()
     assert not at.exception
     assert len(at.markdown) >= len(TOOLS)  # one card per tool
 
@@ -173,6 +178,7 @@ def test_error_from_model_is_shown_not_raised(fake_server):
 def test_shared_mode_enforces_session_limit(fake_server):
     fake_server.reply = "Fixed text."
     at = page_app("proofreader")
+    del at.session_state["LLM_PROVIDER"]  # let the host secrets pick the provider
     at.secrets["LLM_PROVIDER"] = "custom"
     at.secrets["LLM_BASE_URL"] = fake_server.base_url
     at.secrets["LLM_MODEL"] = "fake"
@@ -196,6 +202,7 @@ def test_shared_mode_enforces_session_limit(fake_server):
 
 def test_shared_mode_rejects_oversized_prompts(fake_server):
     at = page_app("summarizer")
+    del at.session_state["LLM_PROVIDER"]
     at.secrets["LLM_PROVIDER"] = "custom"
     at.secrets["LLM_BASE_URL"] = fake_server.base_url
     at.secrets["LLM_MODEL"] = "fake"
@@ -206,3 +213,34 @@ def test_shared_mode_rejects_oversized_prompts(fake_server):
     click(at, "Summarise")
     assert at.error and "up to 50 words" in at.error[0].value
     assert not fake_server.requests
+
+
+def test_free_mode_page_flow_with_stubbed_backend(monkeypatch):
+    from types import SimpleNamespace
+
+    import ai_alchemy.llm as llm_module
+
+    class StubFreeBackend:
+        def __init__(self, **_):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        def create(self, *, stream=False, **_):
+            text = "Corrected text."
+            if stream:
+                chunk = SimpleNamespace(
+                    choices=[SimpleNamespace(delta=SimpleNamespace(content=text))]
+                )
+                return iter([chunk])
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=text))])
+
+    monkeypatch.setattr(llm_module, "FreeBackend", StubFreeBackend)
+
+    at = page_app("proofreader")
+    at.session_state["LLM_PROVIDER"] = "free"
+    at.run()
+    assert not at.info  # no key prompt
+    at.text_area("pf_text").set_value("Corected text.").run()
+    at.toggle[0].set_value(False).run()
+    click(at, "Proofread")
+    assert not at.exception and not at.error
+    assert any("line-through" in m.value for m in at.markdown)

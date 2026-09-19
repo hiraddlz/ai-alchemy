@@ -68,7 +68,7 @@ def _show_match(result: dict[str, Any]) -> None:
     score_col, verdict_col = st.columns([1, 3])
     score_col.metric("Match score", f"{score}%")
     score_col.progress(score / 100)
-    verdict_col.markdown(f"### :{colour}[{result.get('verdict', '')}]")
+    verdict_col.markdown(f"**:{colour}[{result.get('verdict', '')}]**")
 
     strengths_col, gaps_col = st.columns(2)
     with strengths_col, st.container(border=True):

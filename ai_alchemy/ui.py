@@ -7,7 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from ai_alchemy.config import PROVIDERS, LLMSettings, load_settings
+from ai_alchemy.config import FREE_MODELS, PROVIDERS, LLMSettings, load_settings
 from ai_alchemy.llm import LLMClient, LLMError
 from ai_alchemy.quota import demo_guard
 
@@ -33,12 +33,17 @@ def render_settings_sidebar() -> LLMSettings:
     provider_keys = list(PROVIDERS)
 
     with st.sidebar:
-        title = "⚙️ Model settings" + (" (optional)" if settings.is_shared else "")
+        title = "⚙️ Model settings" + (" (optional)" if settings.is_configured else "")
         with st.expander(title, expanded=not settings.is_configured):
             if settings.is_shared:
                 st.caption(
                     "A free shared model is preloaded. Paste your own key to pick any model "
                     "and remove the demo limits."
+                )
+            elif settings.is_free:
+                st.caption(
+                    "Free models run on public endpoints - no key, but best-effort speed and "
+                    "availability. Switch provider and paste a key for guaranteed quality."
                 )
             provider_key = st.selectbox(
                 "Provider",
@@ -69,18 +74,28 @@ def render_settings_sidebar() -> LLMSettings:
                     else provider.default_model
                 )
             settings = load_settings()
-            st.text_input(
-                "Model",
-                key="LLM_MODEL",
-                disabled=settings.is_shared,
-                help=(
-                    "Locked while using the shared key - paste your own key to change it."
-                    if settings.is_shared
-                    else "Suggestions: " + ", ".join(provider.suggested_models)
-                    if provider.suggested_models
-                    else "Any chat model served by your endpoint."
-                ),
-            )
+            if provider.key == "free":
+                if st.session_state.get("LLM_MODEL") not in FREE_MODELS:
+                    st.session_state["LLM_MODEL"] = provider.default_model
+                st.selectbox(
+                    "Model",
+                    list(FREE_MODELS),
+                    key="LLM_MODEL",
+                    format_func=lambda model: FREE_MODELS[model],
+                )
+            else:
+                st.text_input(
+                    "Model",
+                    key="LLM_MODEL",
+                    disabled=settings.is_shared,
+                    help=(
+                        "Locked while using the shared key - paste your own key to change it."
+                        if settings.is_shared
+                        else "Suggestions: " + ", ".join(provider.suggested_models)
+                        if provider.suggested_models
+                        else "Any chat model served by your endpoint."
+                    ),
+                )
             st.slider("Creativity (temperature)", 0.0, 1.0, 0.3, 0.05, key="LLM_TEMPERATURE")
 
             settings = load_settings()
@@ -100,6 +115,8 @@ def render_settings_sidebar() -> LLMSettings:
             st.caption(
                 f"🟢 Free shared model · `{settings.model}` · {used}/{limit} demo calls used"
             )
+        elif settings.is_free:
+            st.caption(f"🟢 Free · {FREE_MODELS.get(settings.model, settings.model)} · no key")
         elif settings.is_configured:
             st.caption(f"🟢 {settings.provider.name} · `{settings.model}` · your key")
         else:
@@ -116,8 +133,8 @@ def require_client() -> LLMClient:
     settings = load_settings()
     if not settings.is_configured:
         st.info(
-            "This tool needs a language model. Open **⚙️ Model settings** in the sidebar, "
-            "pick a provider and paste an API key (free tiers exist for Groq, OpenRouter and Gemini).",
+            "This tool needs a language model. Open **⚙️ Model settings** in the sidebar and "
+            "pick **Free (no key needed)**, or choose a provider and paste an API key.",
             icon="🔑",
         )
         st.stop()

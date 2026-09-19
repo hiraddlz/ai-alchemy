@@ -29,6 +29,12 @@ def render() -> None:
             "Want a stronger model or no demo limits? Paste your own key in **⚙️ Model settings**.",
             icon="🎁",
         )
+    elif settings.is_free:
+        st.success(
+            "**No setup needed** - free public models (DeepSeek, GLM, Qwen, ...) are ready, "
+            "just pick a tool. Prefer a specific provider? Paste your key in **⚙️ Model settings**.",
+            icon="🎁",
+        )
     elif settings.is_configured:
         st.success(
             f"Ready - using **{settings.provider.name}** with `{settings.model}`. Pick a tool below.",
@@ -37,8 +43,8 @@ def render() -> None:
     else:
         st.info(
             "**Get started:** open **⚙️ Model settings** in the sidebar and paste an API key. "
-            "Works with OpenAI, Groq, OpenRouter, Google Gemini, a local Ollama server or any "
-            "OpenAI-compatible endpoint. The image tools work without a key.",
+            "Works with OpenAI, Gemini, Groq, DeepSeek, Hugging Face, OpenRouter, a local Ollama "
+            "server or any OpenAI-compatible endpoint. The image tools work without a key.",
             icon="👋",
         )
 

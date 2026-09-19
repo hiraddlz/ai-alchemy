@@ -21,6 +21,7 @@ dependencies = [
     "pypdfium2>=4",
     "docx2txt>=0.8",
     "youtube-transcript-api>=1.0",
+    "g4f>=8.0",  # keyless "Free" provider via public endpoints
 ]
 
 [project.optional-dependencies]

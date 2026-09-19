@@ -10,11 +10,15 @@ Settings come from three sources:
 A visitor's own key always wins. When no key was typed and the selected provider is the
 one the host configured, the host key is used in **shared mode**: the host's model is
 locked and :mod:`ai_alchemy.quota` applies usage caps so one visitor cannot exhaust the
-host's free tier. Every provider is accessed through the OpenAI-compatible chat API.
+host's free tier. When nothing is configured at all, the app falls back to the **free**
+provider (public endpoints via ``g4f``, no key) if that package is installed.
+
+Every keyed provider is accessed through the OpenAI-compatible chat API.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -31,9 +35,32 @@ class Provider:
     needs_api_key: bool = True
     keys_url: str | None = None
     supports_json_mode: bool = True
+    backend: Literal["openai", "g4f"] = "openai"
 
+
+# Curated keyless models reachable through g4f (label -> model id). Availability of public
+# endpoints changes over time; the free backend falls back through a provider chain.
+FREE_MODELS: dict[str, str] = {
+    "kilo-auto/free": "Auto (best available)",
+    "deepseek/deepseek-v4-flash-0731:free": "DeepSeek V4 Flash",
+    "z-ai/glm-5.2:free": "GLM 5.2",
+    "qwen/qwen3.8-27b:free": "Qwen 3.8 27B",
+    "nvidia/nemotron-3-ultra-550b-a55b:free": "Nemotron 3 Ultra 550B",
+    "inclusionai/ling-3.0-flash-vl:free": "Ling 3.0 Flash (vision)",
+}
 
 PROVIDERS: dict[str, Provider] = {
+    "free": Provider(
+        key="free",
+        name="Free (no key needed)",
+        base_url=None,
+        default_model="kilo-auto/free",
+        suggested_models=tuple(FREE_MODELS),
+        needs_api_key=False,
+        keys_url="https://github.com/xtekky/gpt4free",
+        supports_json_mode=False,
+        backend="g4f",
+    ),
     "openai": Provider(
         key="openai",
         name="OpenAI",
@@ -75,6 +102,27 @@ PROVIDERS: dict[str, Provider] = {
         ),
         keys_url="https://openrouter.ai/keys",
     ),
+    "deepseek": Provider(
+        key="deepseek",
+        name="DeepSeek",
+        base_url="https://api.deepseek.com",
+        default_model="deepseek-chat",
+        suggested_models=("deepseek-chat", "deepseek-reasoner"),
+        keys_url="https://platform.deepseek.com/api_keys",
+    ),
+    "huggingface": Provider(
+        key="huggingface",
+        name="Hugging Face",
+        base_url="https://router.huggingface.co/v1",
+        default_model="deepseek-ai/DeepSeek-V3",
+        suggested_models=(
+            "deepseek-ai/DeepSeek-V3",
+            "Qwen/Qwen2.5-72B-Instruct",
+            "meta-llama/Llama-3.3-70B-Instruct",
+        ),
+        keys_url="https://huggingface.co/settings/tokens",
+        supports_json_mode=False,
+    ),
     "ollama": Provider(
         key="ollama",
         name="Ollama (local)",
@@ -96,6 +144,25 @@ PROVIDERS: dict[str, Provider] = {
 }
 
 DEFAULT_PROVIDER = "openai"
+
+
+def free_backend_available() -> bool:
+    """True when the optional ``g4f`` package is installed."""
+    return importlib.util.find_spec("g4f") is not None
+
+
+def default_provider_key(host_provider: str, host_has_key: bool, free_available: bool) -> str:
+    """Pick the provider to use when the visitor has not chosen one.
+
+    A host-configured key wins; otherwise the keyless free provider when available;
+    otherwise the host's/declared provider (which will prompt for a key).
+    """
+    if host_has_key:
+        return host_provider
+    if free_available and host_provider in ("", DEFAULT_PROVIDER):
+        return "free"
+    return host_provider or DEFAULT_PROVIDER
+
 
 # Names of the settings as they appear in secrets / environment variables.
 SETTING_KEYS = ("LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL", "LLM_BASE_URL")
@@ -136,6 +203,11 @@ class LLMSettings:
         """True when the visitor is running on the host's key (usage caps apply)."""
         return self.provider.needs_api_key and self.key_source == "host"
 
+    @property
+    def is_free(self) -> bool:
+        """True when running keyless through public endpoints (best-effort quality)."""
+        return self.provider.backend == "g4f"
+
     def demo_limit(self, name: str) -> int:
         return int((self.demo_limits or {}).get(name, DEMO_DEFAULTS[name]))
 
@@ -152,27 +224,35 @@ def resolve_settings(
     overrides: Mapping[str, Any] | None = None,
     secrets: Mapping[str, Any] | None = None,
     env: Mapping[str, str] | None = None,
+    free_available: bool | None = None,
 ) -> LLMSettings:
     """Merge the settings sources into a single :class:`LLMSettings`.
 
     Pure function - Streamlit specific lookups happen in :func:`load_settings`.
+    ``free_available`` defaults to whether ``g4f`` is importable.
     """
     overrides = overrides or {}
     secrets = secrets or {}
     env = os.environ if env is None else env
+    if free_available is None:
+        free_available = free_backend_available()
 
     def host(name: str) -> str:
         return _first(secrets.get(name), env.get(name))
 
-    host_provider_key = host("LLM_PROVIDER").lower() or DEFAULT_PROVIDER
-    provider_key = _first(overrides.get("LLM_PROVIDER")).lower() or host_provider_key
+    host_provider_key = host("LLM_PROVIDER").lower()
+    host_key = host("LLM_API_KEY")
+    if not host_key and host_provider_key in ("", "openai"):
+        host_key = host("OPENAI_API_KEY")  # honoured as a convenience
+    host_provider_key = host_provider_key or DEFAULT_PROVIDER
+
+    provider_key = _first(overrides.get("LLM_PROVIDER")).lower() or default_provider_key(
+        host_provider_key, bool(host_key), free_available
+    )
     provider = PROVIDERS.get(provider_key, PROVIDERS["custom"])
     on_host_provider = provider_key == host_provider_key
 
     session_key = _first(overrides.get("LLM_API_KEY"))
-    host_key = host("LLM_API_KEY")
-    if not host_key and host_provider_key == "openai":
-        host_key = host("OPENAI_API_KEY")  # honoured as a convenience
 
     if session_key:
         api_key, key_source = session_key, "session"

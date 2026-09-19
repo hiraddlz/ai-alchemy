@@ -2,19 +2,45 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
-from ai_alchemy.config import PROVIDERS, resolve_settings
+from ai_alchemy.config import PROVIDERS, default_provider_key, resolve_settings
+from ai_alchemy.free_backend import AUTO_MODEL, FreeBackend, FreeProviderError
 from ai_alchemy.llm import LLMClient, LLMError, parse_json_response, strip_code_fences
 
 # ---------------------------------------------------------------- settings
 
 
-def test_resolve_settings_defaults_to_openai_when_empty():
-    settings = resolve_settings(env={})
+def test_resolve_settings_defaults_to_openai_when_nothing_is_available():
+    settings = resolve_settings(env={}, free_available=False)
     assert settings.provider is PROVIDERS["openai"]
     assert settings.model == "gpt-4o-mini"
     assert not settings.is_configured
+
+
+def test_resolve_settings_defaults_to_free_when_g4f_is_installed():
+    settings = resolve_settings(env={}, free_available=True)
+    assert settings.provider is PROVIDERS["free"]
+    assert settings.is_free and settings.is_configured and not settings.is_shared
+    assert settings.model == AUTO_MODEL
+
+
+def test_default_provider_prefers_host_key_over_free():
+    assert default_provider_key("gemini", host_has_key=True, free_available=True) == "gemini"
+    assert default_provider_key("openai", host_has_key=False, free_available=True) == "free"
+    assert default_provider_key("groq", host_has_key=False, free_available=True) == "groq"
+    assert default_provider_key("openai", host_has_key=False, free_available=False) == "openai"
+
+
+def test_visitor_can_switch_from_free_to_a_keyed_provider():
+    settings = resolve_settings(
+        overrides={"LLM_PROVIDER": "deepseek", "LLM_API_KEY": "sk"}, env={}, free_available=True
+    )
+    assert settings.provider is PROVIDERS["deepseek"]
+    assert settings.base_url == "https://api.deepseek.com"
+    assert settings.is_configured and not settings.is_free
 
 
 def test_visitor_key_beats_host_key_and_unlocks_model_choice():
@@ -65,13 +91,16 @@ def test_secrets_beat_env_for_host_settings():
 
 
 def test_resolve_settings_blank_override_falls_through():
-    settings = resolve_settings(overrides={"LLM_API_KEY": "   "}, env={"OPENAI_API_KEY": "sk-env"})
+    settings = resolve_settings(
+        overrides={"LLM_API_KEY": "   "}, env={"OPENAI_API_KEY": "sk-env"}, free_available=True
+    )
+    assert settings.provider is PROVIDERS["openai"]  # a host key beats the free default
     assert settings.api_key == "sk-env"
     assert settings.is_shared
 
 
 def test_ollama_needs_no_key_and_custom_needs_base_url():
-    assert resolve_settings(env={"LLM_PROVIDER": "ollama"}).is_configured
+    assert resolve_settings(env={"LLM_PROVIDER": "ollama"}, free_available=False).is_configured
     custom = resolve_settings(env={"LLM_PROVIDER": "custom", "LLM_MODEL": "m", "LLM_API_KEY": "k"})
     assert not custom.is_configured
     custom = resolve_settings(
@@ -208,3 +237,71 @@ def test_before_request_hook_can_block_calls(fake_server):
     with pytest.raises(LLMError, match="blocked"):
         list(client.complete_stream("s", "u"))
     assert len(fake_server.requests) == 1  # second call never reached the server
+
+
+# ----------------------------------------------------------- free backend
+
+
+class _StubG4F:
+    """Mimics g4f's Client: fails for providers in ``failing`` and records calls."""
+
+    def __init__(self, failing=(), reply="pong"):
+        self.failing = set(failing)
+        self.reply = reply
+        self.calls: list[dict] = []
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        if kwargs["provider"].__name__ in self.failing:
+            raise RuntimeError("down")
+        if kwargs.get("stream"):
+            return iter(
+                SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=piece))])
+                for piece in (self.reply[:2], self.reply[2:])
+            )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.reply))]
+        )
+
+
+def _free_client(stub) -> LLMClient:
+    return LLMClient(resolve_settings(env={}, free_available=True), client=stub)
+
+
+def test_free_backend_uses_first_working_provider():
+    stub = _StubG4F()
+    assert _free_client(stub).complete("s", "u") == "pong"
+    assert len(stub.calls) == 1
+    assert stub.calls[0]["provider"].__name__ == "KiloCode"
+    assert stub.calls[0]["model"] == AUTO_MODEL
+    assert "max_tokens" not in stub.calls[0]  # starves reasoning models
+
+
+def test_free_backend_falls_back_when_primary_fails():
+    stub = _StubG4F(failing={"KiloCode"})
+    assert _free_client(stub).complete("s", "u") == "pong"
+    providers = [c["provider"].__name__ for c in stub.calls]
+    assert providers[0] == "KiloCode" and providers[-1] == "HuggingSpace"
+
+
+def test_free_backend_streams_and_retries_named_model_via_auto():
+    stub = _StubG4F()
+    settings = resolve_settings(
+        overrides={"LLM_MODEL": "z-ai/glm-5.2:free"}, env={}, free_available=True
+    )
+    client = LLMClient(settings, client=stub)
+    assert "".join(client.complete_stream("s", "u")) == "pong"
+    assert stub.calls[0]["model"] == "z-ai/glm-5.2:free"
+
+    stub_fail = _StubG4F(failing={"KiloCode"})
+    LLMClient(settings, client=stub_fail).complete("s", "u")
+    assert [c["model"] for c in stub_fail.calls[:2]] == ["z-ai/glm-5.2:free", AUTO_MODEL]
+
+
+def test_free_backend_reports_friendly_error_when_all_fail():
+    stub = _StubG4F(failing={"KiloCode", "HuggingSpace", "CohereForAI_C4AI_Command"})
+    with pytest.raises(LLMError, match="free public endpoints"):
+        _free_client(stub).complete("s", "u")
+    with pytest.raises(FreeProviderError):
+        FreeBackend(client=stub).create(model=AUTO_MODEL, messages=[])

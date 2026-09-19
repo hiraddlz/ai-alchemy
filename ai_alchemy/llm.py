@@ -18,6 +18,7 @@ from openai import (
 )
 
 from ai_alchemy.config import LLMSettings
+from ai_alchemy.free_backend import FreeBackend, FreeProviderError
 
 Message = dict[str, Any]
 
@@ -28,6 +29,13 @@ class LLMError(RuntimeError):
 
 def _friendly_error(exc: Exception, settings: LLMSettings) -> LLMError:
     provider = settings.provider.name
+    if settings.is_free or isinstance(exc, FreeProviderError):
+        detail = str(exc).split(";")[0][:160]
+        return LLMError(
+            "The free public endpoints could not answer right now "
+            f"({detail}). Try again in a moment, pick another free model, or paste your own "
+            "key in the sidebar for a reliable provider."
+        )
     if isinstance(exc, AuthenticationError):
         return LLMError(f"{provider} rejected the API key. Check it in the sidebar settings.")
     if isinstance(exc, NotFoundError):
@@ -105,6 +113,9 @@ class LLMClient:
         (used for shared-mode usage caps)."""
         self.settings = settings
         self._before_request = before_request
+        if settings.provider.backend == "g4f":
+            self._client: Any = FreeBackend(**client_kwargs)  # client=... in tests
+            return
         options: dict[str, Any] = {
             "api_key": settings.api_key or "not-needed",
             "base_url": settings.base_url,

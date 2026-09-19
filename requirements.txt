@@ -6,5 +6,6 @@ redlines>=0.5
 pypdfium2>=4
 docx2txt>=0.8
 youtube-transcript-api>=1.0
+g4f>=8.0
 # Optional: enables the Background Remover tool (downloads a ~170 MB ONNX model on first use).
 rembg[cpu]>=2.0.60
