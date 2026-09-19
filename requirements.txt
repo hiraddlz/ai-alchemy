@@ -1,14 +1,10 @@
-anthropic
-g4f
-streamlit
-langchain
-pix2tex
-torch
-pytesseract
-redlines
-rembg
-pypdfium2
-docx2txt
-onnxruntime
-pyperclip
-youtube-transcript-api
+# Runtime dependencies (used by Streamlit Community Cloud). Keep in sync with pyproject.toml.
+streamlit>=1.45
+openai>=1.50
+pillow>=10
+redlines>=0.5
+pypdfium2>=4
+docx2txt>=0.8
+youtube-transcript-api>=1.0
+# Optional: enables the Background Remover tool (downloads a ~170 MB ONNX model on first use).
+rembg[cpu]>=2.0.60

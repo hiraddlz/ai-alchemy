@@ -1,0 +1,57 @@
+/* AI Alchemy - light touch on top of the Streamlit theme. */
+
+.hero {
+    padding: 2.2rem 2rem;
+    margin-bottom: 1.5rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(56, 189, 248, 0.12));
+    border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.hero-title {
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+}
+
+.hero-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    max-width: 60ch;
+}
+
+/* Tool cards on the home page */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 14px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] h3 {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* ASCII art output should not wrap */
+.ascii-art pre {
+    font-family: "Cascadia Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+    font-size: 0.55rem;
+    line-height: 0.6rem;
+    letter-spacing: 0;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0;
+}
+
+/* Right-to-left translation output */
+.rtl {
+    direction: rtl;
+    text-align: right;
+    font-size: 1.1rem;
+    line-height: 1.9;
+}

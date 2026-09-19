@@ -1,0 +1,51 @@
+[project]
+name = "ai-alchemy"
+version = "2.0.0"
+description = "A provider-agnostic suite of AI-powered tools built with Streamlit."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Hirad Dolatzadeh" }]
+requires-python = ">=3.10"
+keywords = ["streamlit", "llm", "openai", "ai-tools", "nlp"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Framework :: Streamlit",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "streamlit>=1.45",
+    "openai>=1.50",
+    "pillow>=10",
+    "redlines>=0.5",
+    "pypdfium2>=4",
+    "docx2txt>=0.8",
+    "youtube-transcript-api>=1.0",
+]
+
+[project.optional-dependencies]
+images = ["rembg[cpu]>=2.0.60"]
+dev = ["pytest>=8", "ruff>=0.6", "pre-commit>=3"]
+
+[project.urls]
+Homepage = "https://github.com/hiraddlz/ai-alchemy"
+"Live Demo" = "https://ai-alchemy.streamlit.app/"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ai_alchemy*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
